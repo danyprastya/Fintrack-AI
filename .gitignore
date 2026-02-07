@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+firestore.rules
+DATABASE_SCHEMA.md
+
 # debug
 npm-debug.log*
 yarn-debug.log*
