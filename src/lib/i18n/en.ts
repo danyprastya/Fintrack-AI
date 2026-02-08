@@ -116,6 +116,43 @@ export const en: Translations = {
     cash: 'Cash',
     bank: 'Bank',
     ewallet: 'E-Wallet',
+    noWallets: 'No wallets yet',
+  },
+
+  notificationsPage: {
+    markAllRead: 'Mark all read',
+    clearAll: 'Clear all',
+    noNotifications: 'No notifications yet',
+    justNow: 'Just now',
+    minutesAgo: 'min ago',
+    hoursAgo: 'h ago',
+    daysAgo: 'd ago',
+  },
+
+  emptyState: {
+    noTransactions: 'No transactions yet',
+    noTransactionsDesc: 'Your transactions will appear here',
+    noBudgets: 'No budgets yet',
+    noBudgetsDesc: 'Set up your monthly budgets',
+    noAnalytics: 'No analytics data yet',
+    noAnalyticsDesc: 'Start recording transactions to see analytics',
+    noWallets: 'No wallets yet',
+    noWalletsDesc: 'Add a wallet to manage your balance',
+  },
+
+  toast: {
+    loginSuccess: 'Signed in successfully!',
+    loginFailed: 'Invalid email or password',
+    registerSuccess: 'Registration successful!',
+    accountExists: 'Account already registered. Please sign in.',
+    profileSaved: 'Profile saved successfully',
+    photoUpdated: 'Photo updated successfully',
+    photoDeleted: 'Photo deleted successfully',
+    photoFailed: 'Failed to upload photo',
+    googleFailed: 'Failed to sign in with Google',
+    popupClosed: 'Popup was closed before completing sign-in',
+    unauthorized: 'Unauthorized domain. Add this domain in Firebase Console.',
+    googleNotEnabled: 'Google Sign-In is not enabled in Firebase Console.',
   },
 
   categories: {

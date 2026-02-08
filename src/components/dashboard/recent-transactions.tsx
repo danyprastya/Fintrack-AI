@@ -65,8 +65,12 @@ export function RecentTransactions({
       </div>
 
       {transactions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-          <p className="text-sm">{t.dashboard.noTransactions}</p>
+        <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+          <span className="text-3xl mb-2">📭</span>
+          <p className="text-sm font-medium">{t.dashboard.noTransactions}</p>
+          <p className="text-xs text-muted-foreground/70 mt-0.5">
+            {t.emptyState.noTransactionsDesc}
+          </p>
         </div>
       ) : (
         <div className="space-y-2.5">

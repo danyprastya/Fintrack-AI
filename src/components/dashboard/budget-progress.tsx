@@ -38,8 +38,12 @@ export function BudgetProgress({
       <h2 className="text-base font-semibold">{t.dashboard.thisMonthBudget}</h2>
 
       {budgets.length === 0 ? (
-        <div className="text-sm text-muted-foreground py-4 text-center">
-          {t.general.noData}
+        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+          <span className="text-3xl mb-2">📋</span>
+          <p className="text-sm font-medium">{t.emptyState.noBudgets}</p>
+          <p className="text-xs text-muted-foreground/70 mt-0.5">
+            {t.emptyState.noBudgetsDesc}
+          </p>
         </div>
       ) : (
         <div className="space-y-4">

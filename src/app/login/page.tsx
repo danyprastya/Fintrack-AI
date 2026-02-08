@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useLanguage } from "@/contexts/language-context";
+import { useDynamicIslandToast } from "@/components/ui/dynamic-island-toast";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { checkPasswordStrength, type PasswordCheck } from "@/lib/sanitize";
@@ -26,7 +27,8 @@ type Step = "form" | "otp";
 
 export default function LoginPage() {
   const { signIn, signInWithGoogle, signInWithToken } = useAuth();
-  const { language } = useLanguage();
+  const { language, t: globalT } = useLanguage();
+  const { showToast } = useDynamicIslandToast();
   const router = useRouter();
 
   const [isRegister, setIsRegister] = useState(false);
@@ -145,9 +147,11 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await signIn(email, password);
+      showToast("success", globalT.toast.loginSuccess);
       router.push("/");
     } catch {
       setError(l.errorLogin);
+      showToast("error", globalT.toast.loginFailed);
     } finally {
       setIsLoading(false);
     }
@@ -177,7 +181,13 @@ export default function LoginPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Registration failed");
+        // Check if account already exists
+        if (data.error?.includes("already") || data.error?.includes("sudah") || res.status === 409) {
+          showToast("error", globalT.toast.accountExists);
+          setError(globalT.toast.accountExists);
+        } else {
+          setError(data.error || "Registration failed");
+        }
         return;
       }
 
@@ -297,9 +307,30 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await signInWithGoogle();
+      showToast("success", globalT.toast.loginSuccess);
       router.push("/");
-    } catch {
-      setError(l.errorGoogle);
+    } catch (err: unknown) {
+      const firebaseError = err as { code?: string; message?: string };
+      if (firebaseError.code === "auth/unauthorized-domain") {
+        setError(globalT.toast.unauthorized);
+        showToast("error", globalT.toast.unauthorized);
+      } else if (firebaseError.code === "auth/popup-closed-by-user") {
+        setError(globalT.toast.popupClosed);
+        showToast("warning", globalT.toast.popupClosed);
+      } else if (
+        firebaseError.code === "auth/operation-not-allowed" ||
+        firebaseError.code === "auth/admin-restricted-operation"
+      ) {
+        setError(globalT.toast.googleNotEnabled);
+        showToast("error", globalT.toast.googleNotEnabled);
+      } else if (firebaseError.code === "auth/cancelled-popup-request") {
+        // User opened multiple popups, ignore silently
+      } else {
+        setError(
+          `${globalT.toast.googleFailed}${firebaseError.code ? ` (${firebaseError.code})` : ""}`,
+        );
+        showToast("error", globalT.toast.googleFailed);
+      }
     } finally {
       setIsLoading(false);
     }

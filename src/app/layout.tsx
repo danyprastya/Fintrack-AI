@@ -9,6 +9,7 @@ import { AuthGuard } from "@/components/auth/auth-guard";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { AppShell } from "@/components/layout/app-shell";
 import { Toaster } from "@/components/ui/sonner";
+import { DynamicIslandToastProvider } from "@/components/ui/dynamic-island-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -70,9 +71,11 @@ export default function RootLayout({
             <AuthProvider>
               <AuthGuard>
                 <NotificationProvider>
-                  <AppShell>{children}</AppShell>
-                  <BottomNav />
-                  <Toaster position="top-center" richColors />
+                  <DynamicIslandToastProvider>
+                    <AppShell>{children}</AppShell>
+                    <BottomNav />
+                    <Toaster position="top-center" richColors />
+                  </DynamicIslandToastProvider>
                 </NotificationProvider>
               </AuthGuard>
             </AuthProvider>

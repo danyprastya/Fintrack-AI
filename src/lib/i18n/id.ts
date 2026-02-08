@@ -116,6 +116,43 @@ export const id: Translations = {
     cash: 'Tunai',
     bank: 'Bank',
     ewallet: 'E-Wallet',
+    noWallets: 'Belum ada dompet',
+  },
+
+  notificationsPage: {
+    markAllRead: 'Tandai semua dibaca',
+    clearAll: 'Hapus semua',
+    noNotifications: 'Belum ada notifikasi',
+    justNow: 'Baru saja',
+    minutesAgo: 'menit lalu',
+    hoursAgo: 'jam lalu',
+    daysAgo: 'hari lalu',
+  },
+
+  emptyState: {
+    noTransactions: 'Belum ada transaksi',
+    noTransactionsDesc: 'Transaksi Anda akan muncul di sini',
+    noBudgets: 'Belum ada anggaran',
+    noBudgetsDesc: 'Atur anggaran bulanan Anda',
+    noAnalytics: 'Belum ada data analitik',
+    noAnalyticsDesc: 'Mulai catat transaksi untuk melihat analitik',
+    noWallets: 'Belum ada dompet',
+    noWalletsDesc: 'Tambahkan dompet untuk mengelola saldo',
+  },
+
+  toast: {
+    loginSuccess: 'Berhasil masuk!',
+    loginFailed: 'Email atau kata sandi salah',
+    registerSuccess: 'Pendaftaran berhasil!',
+    accountExists: 'Akun sudah terdaftar. Silakan masuk.',
+    profileSaved: 'Profil berhasil disimpan',
+    photoUpdated: 'Foto berhasil diperbarui',
+    photoDeleted: 'Foto berhasil dihapus',
+    photoFailed: 'Gagal mengunggah foto',
+    googleFailed: 'Gagal masuk dengan Google',
+    popupClosed: 'Popup ditutup sebelum selesai',
+    unauthorized: 'Domain tidak diizinkan. Tambahkan domain ini di Firebase Console.',
+    googleNotEnabled: 'Google Sign-In belum diaktifkan di Firebase Console.',
   },
 
   categories: {

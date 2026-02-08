@@ -6,81 +6,10 @@ import { PageHeader } from "@/components/shared/page-header";
 import { TransactionList } from "@/components/transactions/transaction-list";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Search, Plus, SlidersHorizontal } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 
 type FilterType = "all" | "income" | "expense" | "transfer";
-
-// Demo data
-const DEMO_TRANSACTIONS = [
-  {
-    id: "1",
-    type: "expense" as const,
-    amount: 45000,
-    description: "Makan Siang di Warteg",
-    categoryIcon: "🍔",
-    categoryName: "Makanan & Minuman",
-    date: "12:30",
-    dateGroup: "Hari Ini",
-    accountName: "Tunai",
-  },
-  {
-    id: "2",
-    type: "expense" as const,
-    amount: 15000,
-    description: "Grab ke Kantor",
-    categoryIcon: "🚗",
-    categoryName: "Transportasi",
-    date: "08:15",
-    dateGroup: "Hari Ini",
-    accountName: "GoPay",
-  },
-  {
-    id: "3",
-    type: "income" as const,
-    amount: 5000000,
-    description: "Gaji Bulanan",
-    categoryIcon: "💰",
-    categoryName: "Gaji",
-    date: "09:00",
-    dateGroup: "Kemarin",
-    accountName: "Bank BCA",
-  },
-  {
-    id: "4",
-    type: "expense" as const,
-    amount: 250000,
-    description: "Belanja di Indomaret",
-    categoryIcon: "🛍️",
-    categoryName: "Belanja",
-    date: "17:45",
-    dateGroup: "Kemarin",
-    accountName: "Tunai",
-  },
-  {
-    id: "5",
-    type: "transfer" as const,
-    amount: 1000000,
-    description: "Transfer ke Tabungan",
-    categoryIcon: "🔄",
-    categoryName: "Transfer",
-    date: "10:00",
-    dateGroup: "3 hari lalu",
-    accountName: "Bank BCA",
-  },
-  {
-    id: "6",
-    type: "expense" as const,
-    amount: 75000,
-    description: "Nonton Bioskop",
-    categoryIcon: "🎬",
-    categoryName: "Hiburan",
-    date: "19:30",
-    dateGroup: "3 hari lalu",
-    accountName: "E-Wallet",
-  },
-];
 
 export default function TransactionsPage() {
   const { t } = useLanguage();
@@ -94,7 +23,20 @@ export default function TransactionsPage() {
     { key: "transfer", label: t.transactions.transferType },
   ];
 
-  const filteredTransactions = DEMO_TRANSACTIONS.filter((tx) => {
+  // TODO: Replace with real Firestore transactions
+  const transactions: {
+    id: string;
+    type: "income" | "expense" | "transfer";
+    amount: number;
+    description: string;
+    categoryIcon: string;
+    categoryName: string;
+    date: string;
+    dateGroup: string;
+    accountName?: string;
+  }[] = [];
+
+  const filteredTransactions = transactions.filter((tx) => {
     if (filter !== "all" && tx.type !== filter) return false;
     if (
       searchQuery &&

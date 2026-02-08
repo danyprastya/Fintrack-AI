@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/contexts/language-context";
+import { useAuth } from "@/contexts/auth-context";
 import { useTheme } from "@/contexts/theme-context";
 import { useNotifications } from "@/contexts/notification-context";
 import { useRouter } from "next/navigation";
@@ -10,13 +11,11 @@ import { WalletSection } from "@/components/settings/wallet-section";
 import { TelegramLinkSection } from "@/components/settings/telegram-link";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  User,
   Bell,
   Shield,
   Database,
-  MessageCircle,
   Info,
   LogOut,
   ChevronRight,
@@ -24,30 +23,7 @@ import {
   Tag,
 } from "lucide-react";
 
-// Demo data
-const DEMO_WALLETS = [
-  {
-    id: "1",
-    name: "Tunai",
-    type: "cash" as const,
-    balance: 500000,
-    icon: "💵",
-  },
-  {
-    id: "2",
-    name: "Bank BCA",
-    type: "bank" as const,
-    balance: 3240000,
-    icon: "🏦",
-  },
-  {
-    id: "3",
-    name: "GoPay",
-    type: "ewallet" as const,
-    balance: 500000,
-    icon: "📱",
-  },
-];
+// No demo wallets — will come from Firestore
 
 interface SettingsItemProps {
   icon: React.ReactNode;
@@ -93,9 +69,14 @@ function SettingsItem({
 
 export default function SettingsPage() {
   const { t } = useLanguage();
+  const { profile } = useAuth();
   const { resolvedTheme, toggleTheme } = useTheme();
   const { unreadCount } = useNotifications();
   const router = useRouter();
+
+  const userName = profile?.displayName || t.settings.profile;
+  const userEmail = profile?.email || "";
+  const initials = userName.charAt(0).toUpperCase();
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -105,17 +86,23 @@ export default function SettingsPage() {
         {/* Profile */}
         <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/10">
           <Avatar className="h-14 w-14 border-2 border-primary/20">
+            {profile?.photoURL ? (
+              <AvatarImage src={profile.photoURL} alt={userName} />
+            ) : null}
             <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
-              U
+              {initials}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-base font-semibold">Pengguna</p>
+            <p className="text-base font-semibold">{userName}</p>
             <p className="text-sm text-muted-foreground truncate">
-              user@email.com
+              {userEmail}
             </p>
           </div>
-          <button className="text-xs text-primary font-medium hover:underline">
+          <button
+            onClick={() => router.push("/profile")}
+            className="text-xs text-primary font-medium hover:underline"
+          >
             {t.settings.editProfile}
           </button>
         </div>
@@ -125,8 +112,8 @@ export default function SettingsPage() {
 
         <Separator />
 
-        {/* Wallets */}
-        <WalletSection wallets={DEMO_WALLETS} />
+        {/* Wallets — empty until user adds wallets */}
+        <WalletSection wallets={[]} />
 
         <Separator />
 
@@ -182,12 +169,10 @@ export default function SettingsPage() {
           <SettingsItem
             icon={<span className="text-sm">💰</span>}
             label={t.settings.currency}
-            value="IDR"
           />
           <SettingsItem
             icon={<span className="text-sm">📊</span>}
             label={t.settings.monthlyBudget}
-            value="Rp 5.000.000"
           />
         </div>
 

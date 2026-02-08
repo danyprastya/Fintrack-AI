@@ -122,6 +122,46 @@ export interface Translations {
     cash: string;
     bank: string;
     ewallet: string;
+    noWallets: string;
+  };
+
+  // Notifications page
+  notificationsPage: {
+    markAllRead: string;
+    clearAll: string;
+    noNotifications: string;
+    justNow: string;
+    minutesAgo: string;
+    hoursAgo: string;
+    daysAgo: string;
+  };
+
+  // Empty states
+  emptyState: {
+    noTransactions: string;
+    noTransactionsDesc: string;
+    noBudgets: string;
+    noBudgetsDesc: string;
+    noAnalytics: string;
+    noAnalyticsDesc: string;
+    noWallets: string;
+    noWalletsDesc: string;
+  };
+
+  // Toast messages
+  toast: {
+    loginSuccess: string;
+    loginFailed: string;
+    registerSuccess: string;
+    accountExists: string;
+    profileSaved: string;
+    photoUpdated: string;
+    photoDeleted: string;
+    photoFailed: string;
+    googleFailed: string;
+    popupClosed: string;
+    unauthorized: string;
+    googleNotEnabled: string;
   };
 
   // Categories

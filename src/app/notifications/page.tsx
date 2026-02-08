@@ -10,23 +10,17 @@ import { cn } from "@/lib/utils";
 import { CheckCheck, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-function timeAgo(date: Date, lang: string): string {
+function timeAgo(date: Date, t: { justNow: string; minutesAgo: string; hoursAgo: string; daysAgo: string }): string {
   const now = Date.now();
   const diff = now - date.getTime();
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
 
-  if (lang === "id") {
-    if (minutes < 1) return "Baru saja";
-    if (minutes < 60) return `${minutes} menit lalu`;
-    if (hours < 24) return `${hours} jam lalu`;
-    return `${days} hari lalu`;
-  }
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  return `${days}d ago`;
+  if (minutes < 1) return t.justNow;
+  if (minutes < 60) return `${minutes} ${t.minutesAgo}`;
+  if (hours < 24) return `${hours} ${t.hoursAgo}`;
+  return `${days} ${t.daysAgo}`;
 }
 
 const TYPE_STYLES: Record<string, string> = {
@@ -38,12 +32,12 @@ const TYPE_STYLES: Record<string, string> = {
 
 function NotificationCard({
   notification,
-  lang,
+  timeTranslations,
   onRead,
   onRemove,
 }: {
   notification: Notification;
-  lang: string;
+  timeTranslations: { justNow: string; minutesAgo: string; hoursAgo: string; daysAgo: string };
   onRead: (id: string) => void;
   onRemove: (id: string) => void;
 }) {
@@ -83,7 +77,7 @@ function NotificationCard({
             {notification.message}
           </p>
           <p className="text-[10px] text-muted-foreground/70 mt-1.5">
-            {timeAgo(notification.timestamp, lang)}
+            {timeAgo(notification.timestamp, timeTranslations)}
           </p>
         </div>
       </div>
@@ -92,7 +86,7 @@ function NotificationCard({
 }
 
 export default function NotificationsPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const {
     notifications,
     unreadCount,
@@ -116,7 +110,7 @@ export default function NotificationsPage() {
               onClick={markAllAsRead}
             >
               <CheckCheck className="h-3.5 w-3.5 mr-1" />
-              {language === "id" ? "Tandai semua dibaca" : "Mark all read"}
+              {t.notificationsPage.markAllRead}
             </Button>
           ) : notifications.length > 0 ? (
             <Button
@@ -126,7 +120,7 @@ export default function NotificationsPage() {
               onClick={clearAll}
             >
               <Trash2 className="h-3.5 w-3.5 mr-1" />
-              {language === "id" ? "Hapus semua" : "Clear all"}
+              {t.notificationsPage.clearAll}
             </Button>
           ) : null
         }
@@ -137,9 +131,7 @@ export default function NotificationsPage() {
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <span className="text-4xl mb-3">🔕</span>
             <p className="text-sm font-medium">
-              {language === "id"
-                ? "Belum ada notifikasi"
-                : "No notifications yet"}
+              {t.notificationsPage.noNotifications}
             </p>
           </div>
         ) : (
@@ -148,7 +140,7 @@ export default function NotificationsPage() {
               <NotificationCard
                 key={n.id}
                 notification={n}
-                lang={language}
+                timeTranslations={t.notificationsPage}
                 onRead={markAsRead}
                 onRemove={removeNotification}
               />

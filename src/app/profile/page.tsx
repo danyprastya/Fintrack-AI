@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useLanguage } from "@/contexts/language-context";
+import { useDynamicIslandToast } from "@/components/ui/dynamic-island-toast";
 import { useRouter } from "next/navigation";
 import { getFirebaseAuth } from "@/lib/firebase";
 import { PageHeader } from "@/components/shared/page-header";
@@ -12,7 +13,8 @@ import { Camera, LogOut, Loader2, Save, Trash2 } from "lucide-react";
 
 export default function ProfilePage() {
   const { profile, signOut, updateUserProfile, isAuthenticated } = useAuth();
-  const { language } = useLanguage();
+  const { language, t: globalT } = useLanguage();
+  const { showToast } = useDynamicIslandToast();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -129,10 +131,12 @@ export default function ProfilePage() {
       // Update local auth state
       await updateUserProfile({ photoURL });
       setPhotoPreview(null); // Clear preview, real URL is now in profile
+      showToast("success", globalT.toast.photoUpdated);
     } catch (err) {
       console.error("Avatar upload failed:", err);
       setPhotoError(l.photoError);
       setPhotoPreview(null); // Revert preview
+      showToast("error", globalT.toast.photoFailed);
     } finally {
       setIsUploadingPhoto(false);
       // Reset file input
@@ -163,6 +167,7 @@ export default function ProfilePage() {
       // Update local auth state
       await updateUserProfile({ photoURL: "" });
       setPhotoPreview(null);
+      showToast("success", globalT.toast.photoDeleted);
     } catch (err) {
       console.error("Avatar delete failed:", err);
       setPhotoError(
@@ -178,6 +183,7 @@ export default function ProfilePage() {
     setIsSaving(true);
     try {
       await updateUserProfile({ displayName: displayName.trim() });
+      showToast("success", globalT.toast.profileSaved);
     } catch {
       // silent
     } finally {
@@ -222,9 +228,18 @@ export default function ProfilePage() {
 
             {/* Camera button — triggers file input */}
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+              onPointerDown={(e) => {
+                // Prevent releasePointerCapture error from motion/draggable
+                e.stopPropagation();
+              }}
               disabled={isUploadingPhoto}
               className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center disabled:opacity-50"
+              style={{ touchAction: "manipulation" }}
             >
               {isUploadingPhoto ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />

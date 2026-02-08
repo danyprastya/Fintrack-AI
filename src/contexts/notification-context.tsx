@@ -32,54 +32,12 @@ const NotificationContext = createContext<NotificationContextValue | undefined>(
   undefined,
 );
 
-// Demo notifications
-const INITIAL_NOTIFICATIONS: Notification[] = [
-  {
-    id: "n1",
-    title: "Anggaran hampir habis",
-    message: "Anggaran Makanan & Minuman sudah terpakai 85%. Sisa Rp 150.000",
-    type: "warning",
-    timestamp: new Date(Date.now() - 1000 * 60 * 30),
-    read: false,
-    icon: "⚠️",
-  },
-  {
-    id: "n2",
-    title: "Gaji diterima",
-    message: "Pemasukan Rp 5.000.000 tercatat di Bank BCA",
-    type: "success",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-    read: false,
-    icon: "💰",
-  },
-  {
-    id: "n3",
-    title: "Pengeluaran besar terdeteksi",
-    message: "Transaksi Rp 1.250.000 di Tokopedia melebihi rata-rata harian",
-    type: "expense",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5),
-    read: false,
-    icon: "🔔",
-  },
-  {
-    id: "n4",
-    title: "Laporan mingguan siap",
-    message: "Lihat ringkasan pengeluaran minggu ini di halaman Analitik",
-    type: "info",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-    read: true,
-    icon: "📊",
-  },
-];
-
 export function NotificationProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [notifications, setNotifications] = useState<Notification[]>(
-    INITIAL_NOTIFICATIONS,
-  );
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,

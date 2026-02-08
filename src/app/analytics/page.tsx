@@ -3,63 +3,11 @@
 import { useState } from "react";
 import { useLanguage } from "@/contexts/language-context";
 import { PageHeader } from "@/components/shared/page-header";
-import { SpendingRings } from "@/components/analytics/spending-rings";
 import { SummaryCards } from "@/components/analytics/summary-cards";
 import { cn } from "@/lib/utils";
+import { BarChart3 } from "lucide-react";
 
 type Period = "weekly" | "monthly" | "yearly";
-
-// Demo data
-const DEMO_CATEGORIES = [
-  {
-    id: "1",
-    name: "Makanan & Minuman",
-    icon: "🍔",
-    amount: 850000,
-    color: "#f97316",
-    percentage: 42,
-  },
-  {
-    id: "2",
-    name: "Transportasi",
-    icon: "🚗",
-    amount: 420000,
-    color: "#3b82f6",
-    percentage: 21,
-  },
-  {
-    id: "3",
-    name: "Belanja",
-    icon: "🛍️",
-    amount: 350000,
-    color: "#ec4899",
-    percentage: 17,
-  },
-  {
-    id: "4",
-    name: "Hiburan",
-    icon: "🎬",
-    amount: 200000,
-    color: "#8b5cf6",
-    percentage: 10,
-  },
-  {
-    id: "5",
-    name: "Tagihan",
-    icon: "📄",
-    amount: 150000,
-    color: "#ef4444",
-    percentage: 7,
-  },
-  {
-    id: "6",
-    name: "Lainnya",
-    icon: "📦",
-    amount: 60000,
-    color: "#6b7280",
-    percentage: 3,
-  },
-];
 
 export default function AnalyticsPage() {
   const { t } = useLanguage();
@@ -71,7 +19,11 @@ export default function AnalyticsPage() {
     { key: "yearly", label: t.analytics.yearly },
   ];
 
-  const totalSpending = DEMO_CATEGORIES.reduce((sum, c) => sum + c.amount, 0);
+  // TODO: Replace with real Firestore data
+  const totalIncome = 0;
+  const totalExpense = 0;
+
+  const hasData = totalIncome > 0 || totalExpense > 0;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -97,74 +49,36 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Summary Cards */}
-        <SummaryCards totalIncome={5000000} totalExpense={totalSpending} />
+        <SummaryCards totalIncome={totalIncome} totalExpense={totalExpense} />
 
-        {/* Spending Chart */}
-        <div className="space-y-3">
-          <h2 className="text-base font-semibold">
-            {t.analytics.spendingByCategory}
-          </h2>
-          <SpendingRings
-            categories={DEMO_CATEGORIES}
-            totalSpending={totalSpending}
-          />
-        </div>
-
-        {/* Monthly Trend - Visual bar chart */}
-        <div className="space-y-3">
-          <h2 className="text-base font-semibold">
-            {t.analytics.monthlyTrend}
-          </h2>
-          <div className="flex items-end gap-2 h-32 px-2">
-            {[
-              { month: t.months.jul, income: 4500000, expense: 3800000 },
-              { month: t.months.aug, income: 5000000, expense: 4200000 },
-              { month: t.months.sep, income: 4800000, expense: 3500000 },
-              { month: t.months.oct, income: 5200000, expense: 4000000 },
-              { month: t.months.nov, income: 5000000, expense: 3900000 },
-              { month: t.months.dec, income: 5500000, expense: 4500000 },
-            ].map((data, i) => {
-              const maxVal = 5500000;
-              const incomeH = (data.income / maxVal) * 100;
-              const expenseH = (data.expense / maxVal) * 100;
-
-              return (
-                <div
-                  key={i}
-                  className="flex-1 flex flex-col items-center gap-1"
-                >
-                  <div className="flex items-end gap-0.5 w-full h-24">
-                    <div
-                      className="flex-1 rounded-t-sm bg-income/70 transition-all duration-500"
-                      style={{ height: `${incomeH}%` }}
-                    />
-                    <div
-                      className="flex-1 rounded-t-sm bg-expense/70 transition-all duration-500"
-                      style={{ height: `${expenseH}%` }}
-                    />
-                  </div>
-                  <span className="text-[9px] text-muted-foreground font-medium">
-                    {data.month.slice(0, 3)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex justify-center gap-4 text-xs">
-            <div className="flex items-center gap-1.5">
-              <div className="h-2.5 w-2.5 rounded-sm bg-income/70" />
-              <span className="text-muted-foreground">
-                {t.dashboard.income}
-              </span>
+        {!hasData ? (
+          /* Empty State */
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <div className="h-16 w-16 rounded-2xl bg-muted/80 flex items-center justify-center mb-4">
+              <BarChart3 className="h-8 w-8 text-muted-foreground/60" />
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="h-2.5 w-2.5 rounded-sm bg-expense/70" />
-              <span className="text-muted-foreground">
-                {t.dashboard.expense}
-              </span>
-            </div>
+            <p className="text-sm font-semibold">{t.emptyState.noAnalytics}</p>
+            <p className="text-xs text-muted-foreground/70 mt-1 text-center max-w-[220px]">
+              {t.emptyState.noAnalyticsDesc}
+            </p>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Spending Chart — will render when data exists */}
+            <div className="space-y-3">
+              <h2 className="text-base font-semibold">
+                {t.analytics.spendingByCategory}
+              </h2>
+            </div>
+
+            {/* Monthly Trend — will render when data exists */}
+            <div className="space-y-3">
+              <h2 className="text-base font-semibold">
+                {t.analytics.monthlyTrend}
+              </h2>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

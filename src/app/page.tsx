@@ -16,82 +16,6 @@ import { Bell } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-// Demo data — will be replaced with Firebase data
-const DEMO_TRANSACTIONS = [
-  {
-    id: "1",
-    type: "expense" as const,
-    amount: 45000,
-    description: "Makan Siang",
-    category: "foodDrinks",
-    categoryIcon: "🍔",
-    date: "Hari Ini",
-  },
-  {
-    id: "2",
-    type: "expense" as const,
-    amount: 15000,
-    description: "Grab ke Kantor",
-    category: "transportation",
-    categoryIcon: "🚗",
-    date: "Hari Ini",
-  },
-  {
-    id: "3",
-    type: "income" as const,
-    amount: 5000000,
-    description: "Gaji Bulanan",
-    category: "salary",
-    categoryIcon: "💰",
-    date: "Kemarin",
-  },
-  {
-    id: "4",
-    type: "expense" as const,
-    amount: 250000,
-    description: "Belanja Bulanan",
-    category: "shopping",
-    categoryIcon: "🛍️",
-    date: "Kemarin",
-  },
-  {
-    id: "5",
-    type: "transfer" as const,
-    amount: 1000000,
-    description: "Transfer ke Bank",
-    category: "others",
-    categoryIcon: "🔄",
-    date: "3 hari lalu",
-  },
-];
-
-const DEMO_BUDGETS = [
-  {
-    id: "1",
-    categoryName: "Makanan & Minuman",
-    categoryIcon: "🍔",
-    spent: 850000,
-    limit: 1500000,
-    color: "#f97316",
-  },
-  {
-    id: "2",
-    categoryName: "Transportasi",
-    categoryIcon: "🚗",
-    spent: 420000,
-    limit: 500000,
-    color: "#3b82f6",
-  },
-  {
-    id: "3",
-    categoryName: "Hiburan",
-    categoryIcon: "🎬",
-    spent: 200000,
-    limit: 300000,
-    color: "#8b5cf6",
-  },
-];
-
 export default function DashboardPage() {
   const { t } = useLanguage();
   const { profile, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -108,7 +32,7 @@ export default function DashboardPage() {
     return <ShimmerDashboard />;
   }
 
-  const userName = profile?.displayName || "Pengguna";
+  const userName = profile?.displayName || t.dashboard.greeting;
   const initials = userName.charAt(0).toUpperCase();
 
   return (
@@ -158,7 +82,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Balance Card */}
-      <BalanceCard totalBalance={4240000} income={5000000} expense={760000} />
+      <BalanceCard totalBalance={0} income={0} expense={0} />
 
       {/* Quick Actions */}
       <QuickActions />
@@ -166,11 +90,11 @@ export default function DashboardPage() {
       {/* Currency Converter */}
       <CurrencyConverterWidget />
 
-      {/* Recent Transactions */}
-      <RecentTransactions transactions={DEMO_TRANSACTIONS} />
+      {/* Recent Transactions — empty */}
+      <RecentTransactions transactions={[]} />
 
-      {/* Budget Progress */}
-      <BudgetProgress budgets={DEMO_BUDGETS} />
+      {/* Budget Progress — empty */}
+      <BudgetProgress budgets={[]} />
     </div>
   );
 }

@@ -34,6 +34,15 @@ export function WalletSection({
 }: WalletSectionProps) {
   const { t } = useLanguage();
 
+  const walletTypeLabel = (type: string): string => {
+    const labels: Record<string, string> = {
+      cash: t.settings.cash,
+      bank: t.settings.bank,
+      ewallet: t.settings.ewallet,
+    };
+    return labels[type] || type;
+  };
+
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex items-center justify-between">
@@ -47,32 +56,42 @@ export function WalletSection({
         </Button>
       </div>
 
-      <div className="space-y-2">
-        {wallets.map((wallet) => (
-          <Card
-            key={wallet.id}
-            className={cn(
-              "border bg-gradient-to-r overflow-hidden",
-              WALLET_COLORS[wallet.type] || WALLET_COLORS.cash,
-            )}
-          >
-            <CardContent className="p-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">{wallet.icon}</span>
-                <div>
-                  <p className="text-sm font-medium">{wallet.name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">
-                    {wallet.type}
-                  </p>
+      {wallets.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+          <span className="text-3xl mb-2">👛</span>
+          <p className="text-sm font-medium">{t.emptyState.noWallets}</p>
+          <p className="text-xs text-muted-foreground/70 mt-0.5">
+            {t.emptyState.noWalletsDesc}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {wallets.map((wallet) => (
+            <Card
+              key={wallet.id}
+              className={cn(
+                "border bg-gradient-to-r overflow-hidden",
+                WALLET_COLORS[wallet.type] || WALLET_COLORS.cash,
+              )}
+            >
+              <CardContent className="p-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{wallet.icon}</span>
+                  <div>
+                    <p className="text-sm font-medium">{wallet.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {walletTypeLabel(wallet.type)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <p className="text-sm font-bold">
-                {formatCurrency(wallet.balance, currency)}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                <p className="text-sm font-bold">
+                  {formatCurrency(wallet.balance, currency)}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

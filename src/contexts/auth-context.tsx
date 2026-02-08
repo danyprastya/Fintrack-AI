@@ -16,6 +16,7 @@ import {
   signOut as firebaseSignOut,
   GoogleAuthProvider,
   signInWithPopup,
+  getRedirectResult,
   updateProfile,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
@@ -87,6 +88,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Check for any pending redirect result (Google sign-in redirect flow)
+    getRedirectResult(fireAuth).catch(() => {});
+
     const unsubscribe = onAuthStateChanged(fireAuth, async (firebaseUser) => {
       setUser(firebaseUser);
 
@@ -95,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const fireDb = getFirebaseDb();
         let phoneNumber: string | null = null;
         let firestorePhotoURL: string | null = null;
+        let firestoreDisplayName: string | null = null;
         if (fireDb) {
           const userDoc = await getDoc(
             doc(fireDb, "users", firebaseUser.uid),
@@ -102,12 +107,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (userDoc?.exists()) {
             phoneNumber = userDoc.data()?.phoneNumber || null;
             firestorePhotoURL = userDoc.data()?.photoURL || null;
+            firestoreDisplayName = userDoc.data()?.displayName || null;
           }
         }
 
         setProfile({
           uid: firebaseUser.uid,
-          displayName: firebaseUser.displayName,
+          // Prefer Firestore displayName over Google Auth displayName
+          displayName: firestoreDisplayName || firebaseUser.displayName,
           email: firebaseUser.email,
           // Prefer Firestore photoURL (Cloudflare R2) over Auth photoURL
           photoURL: firestorePhotoURL || firebaseUser.photoURL,
@@ -134,7 +141,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const fireAuth = getFirebaseAuth();
     if (!fireAuth) throw new Error("Firebase not configured");
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(fireAuth, provider);
+    provider.setCustomParameters({ prompt: "select_account" });
+
+    // Try popup first; if it fails due to COOP issues, handle gracefully
+    const result = await signInWithPopup(fireAuth, provider);
+
+    // After successful Google sign-in, check if Firestore already has a displayName
+    if (result.user) {
+      const fireDb = getFirebaseDb();
+      if (fireDb) {
+        const userDoc = await getDoc(
+          doc(fireDb, "users", result.user.uid),
+        ).catch(() => null);
+        if (userDoc?.exists() && userDoc.data()?.displayName) {
+          // Update local profile with Firestore displayName
+          setProfile((prev) => prev ? {
+            ...prev,
+            displayName: userDoc.data()?.displayName || prev.displayName,
+          } : prev);
+        }
+      }
+    }
   }, []);
 
   const signInWithTokenFn = useCallback(async (customToken: string) => {
