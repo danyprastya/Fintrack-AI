@@ -1,22 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useRouter } from "next/navigation";
+import { getFirebaseAuth } from "@/lib/firebase";
 import { PageHeader } from "@/components/shared/page-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Camera, LogOut, Loader2, Save } from "lucide-react";
+import { Camera, LogOut, Loader2, Save, Trash2 } from "lucide-react";
 
 export default function ProfilePage() {
   const { profile, signOut, updateUserProfile, isAuthenticated } = useAuth();
   const { language } = useLanguage();
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState(profile?.displayName || "");
   const [isSaving, setIsSaving] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   const t = {
     id: {
@@ -29,6 +35,12 @@ export default function ProfilePage() {
       signOutConfirm: "Yakin ingin keluar?",
       joined: "Bergabung sejak",
       photoHint: "Ketuk untuk ganti foto",
+      deletePhoto: "Hapus Foto",
+      uploading: "Mengunggah...",
+      photoMaxSize: "Maks 2 MB (JPG, PNG, WebP)",
+      photoSuccess: "Foto berhasil diperbarui!",
+      photoDeleted: "Foto berhasil dihapus",
+      photoError: "Gagal mengunggah foto",
     },
     en: {
       title: "Profile",
@@ -40,11 +52,126 @@ export default function ProfilePage() {
       signOutConfirm: "Are you sure you want to sign out?",
       joined: "Joined since",
       photoHint: "Tap to change photo",
+      deletePhoto: "Delete Photo",
+      uploading: "Uploading...",
+      photoMaxSize: "Max 2 MB (JPG, PNG, WebP)",
+      photoSuccess: "Photo updated successfully!",
+      photoDeleted: "Photo deleted successfully",
+      photoError: "Failed to upload photo",
     },
   };
 
   const l = t[language];
   const initials = (profile?.displayName || "U").charAt(0).toUpperCase();
+  const currentPhotoURL = photoPreview || profile?.photoURL;
+
+  /** Get Firebase ID token for API calls */
+  async function getIdToken(): Promise<string | null> {
+    const fireAuth = getFirebaseAuth();
+    if (!fireAuth?.currentUser) return null;
+    return fireAuth.currentUser.getIdToken();
+  }
+
+  /** Handle file selection for avatar upload */
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset
+    setPhotoError(null);
+
+    // Validate type
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setPhotoError(
+        language === "id"
+          ? "Format tidak didukung. Gunakan JPG, PNG, atau WebP"
+          : "Unsupported format. Use JPG, PNG, or WebP",
+      );
+      return;
+    }
+
+    // Validate size (2 MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setPhotoError(
+        language === "id"
+          ? "Ukuran file maks 2 MB"
+          : "File size must be under 2 MB",
+      );
+      return;
+    }
+
+    // Show preview immediately
+    const previewUrl = URL.createObjectURL(file);
+    setPhotoPreview(previewUrl);
+    setIsUploadingPhoto(true);
+
+    try {
+      const idToken = await getIdToken();
+      if (!idToken) throw new Error("Not authenticated");
+
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const res = await fetch("/api/avatar", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Upload failed");
+      }
+
+      const { photoURL } = await res.json();
+
+      // Update local auth state
+      await updateUserProfile({ photoURL });
+      setPhotoPreview(null); // Clear preview, real URL is now in profile
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+      setPhotoError(l.photoError);
+      setPhotoPreview(null); // Revert preview
+    } finally {
+      setIsUploadingPhoto(false);
+      // Reset file input
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  /** Handle avatar deletion */
+  const handleDeletePhoto = async () => {
+    if (!profile?.photoURL) return;
+
+    setIsDeletingPhoto(true);
+    setPhotoError(null);
+
+    try {
+      const idToken = await getIdToken();
+      if (!idToken) throw new Error("Not authenticated");
+
+      const res = await fetch("/api/avatar", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+
+      if (!res.ok) {
+        throw new Error("Delete failed");
+      }
+
+      // Update local auth state
+      await updateUserProfile({ photoURL: "" });
+      setPhotoPreview(null);
+    } catch (err) {
+      console.error("Avatar delete failed:", err);
+      setPhotoError(
+        language === "id" ? "Gagal menghapus foto" : "Failed to delete photo",
+      );
+    } finally {
+      setIsDeletingPhoto(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!displayName.trim()) return;
@@ -82,21 +209,67 @@ export default function ProfilePage() {
         <div className="flex flex-col items-center gap-3 pt-4">
           <div className="relative">
             <Avatar className="h-24 w-24 border-4 border-primary/20 shadow-xl shadow-primary/10">
-              {profile?.photoURL ? (
+              {currentPhotoURL ? (
                 <AvatarImage
-                  src={profile.photoURL}
-                  alt={profile.displayName || ""}
+                  src={currentPhotoURL}
+                  alt={profile?.displayName || ""}
                 />
               ) : null}
               <AvatarFallback className="bg-primary/10 text-primary text-3xl font-bold">
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <button className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center">
-              <Camera className="h-3.5 w-3.5" />
+
+            {/* Camera button — triggers file input */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingPhoto}
+              className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center disabled:opacity-50"
+            >
+              {isUploadingPhoto ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Camera className="h-3.5 w-3.5" />
+              )}
             </button>
+
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
           </div>
-          <p className="text-xs text-muted-foreground">{l.photoHint}</p>
+
+          <p className="text-xs text-muted-foreground">
+            {isUploadingPhoto ? l.uploading : l.photoHint}
+          </p>
+          <p className="text-[10px] text-muted-foreground/60">
+            {l.photoMaxSize}
+          </p>
+
+          {/* Photo error message */}
+          {photoError && (
+            <p className="text-xs text-destructive">{photoError}</p>
+          )}
+
+          {/* Delete photo button */}
+          {profile?.photoURL && !isUploadingPhoto && (
+            <button
+              onClick={handleDeletePhoto}
+              disabled={isDeletingPhoto}
+              className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 transition-colors disabled:opacity-50"
+            >
+              {isDeletingPhoto ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Trash2 className="h-3 w-3" />
+              )}
+              {l.deletePhoto}
+            </button>
+          )}
         </div>
 
         {/* Form fields */}

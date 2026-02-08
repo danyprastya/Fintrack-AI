@@ -12,7 +12,7 @@ import {
   User,
   onAuthStateChanged,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
+  signInWithCustomToken,
   signOut as firebaseSignOut,
   GoogleAuthProvider,
   signInWithPopup,
@@ -30,6 +30,7 @@ interface UserProfile {
   displayName: string | null;
   email: string | null;
   photoURL: string | null;
+  phoneNumber?: string | null;
   createdAt?: Date;
 }
 
@@ -39,8 +40,8 @@ interface AuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithToken: (customToken: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateUserProfile: (data: {
     displayName?: string;
@@ -64,6 +65,7 @@ async function syncUserToFirestore(user: User) {
       displayName: user.displayName || "Pengguna",
       email: user.email,
       photoURL: user.photoURL || null,
+      phoneNumber: user.phoneNumber || null,
       createdAt: serverTimestamp(),
       currency: "IDR",
       language: "id",
@@ -79,14 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const fireAuth = getFirebaseAuth();
 
-    // If Firebase is not configured, skip auth and use demo mode
+    // If Firebase is not configured, stay in unauthenticated state
     if (!fireAuth || !isFirebaseConfigured()) {
-      setProfile({
-        uid: "demo",
-        displayName: "Pengguna",
-        email: "demo@fintrack.ai",
-        photoURL: null,
-      });
       setIsLoading(false);
       return;
     }
@@ -95,11 +91,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(firebaseUser);
 
       if (firebaseUser) {
+        // Load additional profile data from Firestore
+        const fireDb = getFirebaseDb();
+        let phoneNumber: string | null = null;
+        let firestorePhotoURL: string | null = null;
+        if (fireDb) {
+          const userDoc = await getDoc(
+            doc(fireDb, "users", firebaseUser.uid),
+          ).catch(() => null);
+          if (userDoc?.exists()) {
+            phoneNumber = userDoc.data()?.phoneNumber || null;
+            firestorePhotoURL = userDoc.data()?.photoURL || null;
+          }
+        }
+
         setProfile({
           uid: firebaseUser.uid,
           displayName: firebaseUser.displayName,
           email: firebaseUser.email,
-          photoURL: firebaseUser.photoURL,
+          // Prefer Firestore photoURL (Cloudflare R2) over Auth photoURL
+          photoURL: firestorePhotoURL || firebaseUser.photoURL,
+          phoneNumber: phoneNumber || firebaseUser.phoneNumber,
         });
         await syncUserToFirestore(firebaseUser);
       } else {
@@ -118,28 +130,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signInWithEmailAndPassword(fireAuth, email, password);
   }, []);
 
-  const signUp = useCallback(
-    async (email: string, password: string, name: string) => {
-      const fireAuth = getFirebaseAuth();
-      if (!fireAuth) throw new Error("Firebase not configured");
-      const cred = await createUserWithEmailAndPassword(
-        fireAuth,
-        email,
-        password,
-      );
-      await updateProfile(cred.user, { displayName: name });
-    },
-    [],
-  );
-
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogleFn = useCallback(async () => {
     const fireAuth = getFirebaseAuth();
     if (!fireAuth) throw new Error("Firebase not configured");
     const provider = new GoogleAuthProvider();
     await signInWithPopup(fireAuth, provider);
   }, []);
 
-  const signOut = useCallback(async () => {
+  const signInWithTokenFn = useCallback(async (customToken: string) => {
+    const fireAuth = getFirebaseAuth();
+    if (!fireAuth) throw new Error("Firebase not configured");
+    await signInWithCustomToken(fireAuth, customToken);
+  }, []);
+
+  const signOutFn = useCallback(async () => {
     const fireAuth = getFirebaseAuth();
     if (!fireAuth) return;
     await firebaseSignOut(fireAuth);
@@ -150,12 +154,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (data: { displayName?: string; photoURL?: string }) => {
       const fireAuth = getFirebaseAuth();
       if (!fireAuth?.currentUser) return;
-      await updateProfile(fireAuth.currentUser, data);
-      setProfile((prev) => (prev ? { ...prev, ...data } : null));
+
+      // Only send non-empty fields to Firebase Auth updateProfile
+      const authUpdate: { displayName?: string; photoURL?: string } = {};
+      if (data.displayName !== undefined)
+        authUpdate.displayName = data.displayName;
+      if (data.photoURL !== undefined)
+        authUpdate.photoURL = data.photoURL || "";
+
+      await updateProfile(fireAuth.currentUser, authUpdate);
+
+      // Update local profile state
+      setProfile((prev) => {
+        if (!prev) return null;
+        const updated = { ...prev };
+        if (data.displayName !== undefined)
+          updated.displayName = data.displayName;
+        if (data.photoURL !== undefined)
+          updated.photoURL = data.photoURL || null;
+        return updated;
+      });
+
+      // Sync to Firestore
       const fireDb = getFirebaseDb();
       if (fireDb) {
         const userRef = doc(fireDb, "users", fireAuth.currentUser.uid);
-        await setDoc(userRef, data, { merge: true }).catch(() => {});
+        const firestoreData: Record<string, unknown> = {};
+        if (data.displayName !== undefined)
+          firestoreData.displayName = data.displayName;
+        if (data.photoURL !== undefined)
+          firestoreData.photoURL = data.photoURL || null;
+        await setDoc(userRef, firestoreData, { merge: true }).catch(() => {});
       }
     },
     [],
@@ -168,9 +197,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       isAuthenticated: !!user,
       signIn,
-      signUp,
-      signInWithGoogle,
-      signOut,
+      signInWithGoogle: signInWithGoogleFn,
+      signInWithToken: signInWithTokenFn,
+      signOut: signOutFn,
       updateUserProfile,
     }),
     [
@@ -178,9 +207,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       isLoading,
       signIn,
-      signUp,
-      signInWithGoogle,
-      signOut,
+      signInWithGoogleFn,
+      signInWithTokenFn,
+      signOutFn,
       updateUserProfile,
     ],
   );

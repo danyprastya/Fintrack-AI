@@ -1,36 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { checkPasswordStrength, type PasswordCheck } from "@/lib/sanitize";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff, Mail, Lock, User, Loader2 } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  Phone,
+  Loader2,
+  CheckCircle2,
+  Circle,
+  ArrowLeft,
+  ShieldCheck,
+} from "lucide-react";
 import Image from "next/image";
 
+type Step = "form" | "otp";
+
 export default function LoginPage() {
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, signInWithToken } = useAuth();
   const { language } = useLanguage();
   const router = useRouter();
 
   const [isRegister, setIsRegister] = useState(false);
+  const [step, setStep] = useState<Step>("form");
+
+  // Form fields
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // OTP
+  const [otpDigits, setOtpDigits] = useState<string[]>([
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [devOtp, setDevOtp] = useState("");
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // State
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
   const t = {
     id: {
-      welcome: "Selamat Datang",
       subtitle: "Kelola keuangan Anda dengan cerdas",
       login: "Masuk",
       register: "Daftar",
       name: "Nama Lengkap",
       email: "Email",
       password: "Kata Sandi",
+      phone: "Nomor WhatsApp",
+      phonePlaceholder: "08xxxxxxxxxx",
       orWith: "atau masuk dengan",
       google: "Google",
       noAccount: "Belum punya akun?",
@@ -38,17 +73,32 @@ export default function LoginPage() {
       registerHere: "Daftar di sini",
       loginHere: "Masuk di sini",
       errorLogin: "Email atau kata sandi salah",
-      errorRegister: "Gagal mendaftar. Coba lagi.",
       errorGoogle: "Gagal masuk dengan Google",
+      sendOtp: "Kirim Kode Verifikasi",
+      verifyTitle: "Verifikasi Nomor HP",
+      verifySub: "Masukkan 6 digit kode yang dikirim ke WhatsApp",
+      verify: "Verifikasi",
+      resend: "Kirim Ulang",
+      resendIn: "Kirim ulang dalam",
+      back: "Kembali",
+      pwMin: "Minimal 8 karakter",
+      pwUpper: "Huruf besar (A-Z)",
+      pwLower: "Huruf kecil (a-z)",
+      pwNumber: "Angka (0-9)",
+      pwSpecial: "Karakter spesial (!@#$%)",
+      pwStrength: "Keamanan Password",
+      secureInfo: "Data Anda dienkripsi dan dilindungi",
+      devOtpLabel: "Dev OTP",
     },
     en: {
-      welcome: "Welcome",
       subtitle: "Manage your finances smartly",
       login: "Sign In",
       register: "Sign Up",
       name: "Full Name",
       email: "Email",
       password: "Password",
+      phone: "WhatsApp Number",
+      phonePlaceholder: "08xxxxxxxxxx",
       orWith: "or sign in with",
       google: "Google",
       noAccount: "Don't have an account?",
@@ -56,32 +106,192 @@ export default function LoginPage() {
       registerHere: "Register here",
       loginHere: "Sign in here",
       errorLogin: "Invalid email or password",
-      errorRegister: "Failed to register. Try again.",
       errorGoogle: "Failed to sign in with Google",
+      sendOtp: "Send Verification Code",
+      verifyTitle: "Verify Phone Number",
+      verifySub: "Enter the 6-digit code sent to your WhatsApp",
+      verify: "Verify",
+      resend: "Resend Code",
+      resendIn: "Resend in",
+      back: "Back",
+      pwMin: "At least 8 characters",
+      pwUpper: "Uppercase letter (A-Z)",
+      pwLower: "Lowercase letter (a-z)",
+      pwNumber: "Number (0-9)",
+      pwSpecial: "Special character (!@#$%)",
+      pwStrength: "Password Strength",
+      secureInfo: "Your data is encrypted and protected",
+      devOtpLabel: "Dev OTP",
     },
   };
 
   const l = t[language];
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Password strength
+  const pwChecks: PasswordCheck = checkPasswordStrength(password);
+  const allPwValid = Object.values(pwChecks).every(Boolean);
+
+  // Resend timer countdown
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const interval = setInterval(() => setResendTimer((p) => p - 1), 1000);
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  // --- Login handler ---
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
     try {
-      if (isRegister) {
-        await signUp(email, password, name);
-      } else {
-        await signIn(email, password);
-      }
+      await signIn(email, password);
       router.push("/");
     } catch {
-      setError(isRegister ? l.errorRegister : l.errorLogin);
+      setError(l.errorLogin);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // --- Register Step 1: Send OTP ---
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!allPwValid) {
+      setError(
+        language === "id"
+          ? "Password belum memenuhi semua persyaratan."
+          : "Password doesn't meet all requirements.",
+      );
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, phone, password }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Registration failed");
+        return;
+      }
+
+      if (data.devOtp) setDevOtp(data.devOtp);
+      setResendTimer(60);
+      setStep("otp");
+    } catch {
+      setError(
+        language === "id"
+          ? "Gagal menghubungi server."
+          : "Failed to connect to server.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- OTP Input handlers ---
+  const handleOtpChange = useCallback(
+    (index: number, value: string) => {
+      if (!/^\d*$/.test(value)) return;
+      const newDigits = [...otpDigits];
+      newDigits[index] = value.slice(-1);
+      setOtpDigits(newDigits);
+      if (value && index < 5) {
+        otpRefs.current[index + 1]?.focus();
+      }
+    },
+    [otpDigits],
+  );
+
+  const handleOtpKeyDown = useCallback(
+    (index: number, e: React.KeyboardEvent) => {
+      if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+        otpRefs.current[index - 1]?.focus();
+      }
+    },
+    [otpDigits],
+  );
+
+  const handleOtpPaste = useCallback((e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6);
+    if (!pasted) return;
+    const newDigits = [...Array(6)].map((_, i) => pasted[i] || "");
+    setOtpDigits(newDigits);
+    const focusIdx = Math.min(pasted.length, 5);
+    otpRefs.current[focusIdx]?.focus();
+  }, []);
+
+  // --- Register Step 2: Verify OTP ---
+  const handleVerify = async () => {
+    const code = otpDigits.join("");
+    if (code.length !== 6) return;
+
+    setError("");
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, code, password }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Verification failed");
+        return;
+      }
+
+      // Sign in with custom token
+      await signInWithToken(data.customToken);
+      router.push("/");
+    } catch {
+      setError(
+        language === "id" ? "Gagal memverifikasi." : "Verification failed.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- Resend OTP ---
+  const handleResend = async () => {
+    if (resendTimer > 0) return;
+    setIsLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error);
+        return;
+      }
+      if (data.devOtp) setDevOtp(data.devOtp);
+      setResendTimer(60);
+      setOtpDigits(["", "", "", "", "", ""]);
+    } catch {
+      setError(
+        language === "id" ? "Gagal mengirim ulang." : "Failed to resend.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- Google sign-in ---
   const handleGoogle = async () => {
     setError("");
     setIsLoading(true);
@@ -95,6 +305,118 @@ export default function LoginPage() {
     }
   };
 
+  // ===== OTP VERIFICATION SCREEN =====
+  if (step === "otp") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
+        <div className="w-full max-w-sm">
+          {/* Back */}
+          <button
+            onClick={() => {
+              setStep("form");
+              setOtpDigits(["", "", "", "", "", ""]);
+              setError("");
+            }}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {l.back}
+          </button>
+
+          {/* Icon */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+              <ShieldCheck className="h-8 w-8 text-primary" />
+            </div>
+            <h1 className="text-xl font-bold text-foreground">
+              {l.verifyTitle}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1 text-center">
+              {l.verifySub}
+            </p>
+            <p className="text-sm font-medium text-primary mt-2">
+              +62 {phone.replace(/^0/, "")}
+            </p>
+          </div>
+
+          {/* OTP Inputs */}
+          <div
+            className="flex justify-center gap-2.5 mb-6"
+            onPaste={handleOtpPaste}
+          >
+            {otpDigits.map((digit, i) => (
+              <input
+                key={i}
+                ref={(el) => {
+                  otpRefs.current[i] = el;
+                }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleOtpChange(i, e.target.value)}
+                onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                className={cn(
+                  "w-12 h-14 text-center text-xl font-bold rounded-xl border-2 bg-background transition-all outline-none",
+                  digit
+                    ? "border-primary text-foreground"
+                    : "border-border text-muted-foreground focus:border-primary",
+                )}
+              />
+            ))}
+          </div>
+
+          {/* Dev OTP indicator */}
+          {devOtp && (
+            <div className="text-center mb-4 p-2 bg-amber-500/10 rounded-lg">
+              <p className="text-xs text-amber-600 dark:text-amber-400 font-mono">
+                {l.devOtpLabel}: {devOtp}
+              </p>
+            </div>
+          )}
+
+          {error && (
+            <p className="text-sm text-destructive text-center mb-4">{error}</p>
+          )}
+
+          {/* Verify Button */}
+          <button
+            onClick={handleVerify}
+            disabled={isLoading || otpDigits.join("").length !== 6}
+            className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              l.verify
+            )}
+          </button>
+
+          {/* Resend */}
+          <div className="text-center mt-4">
+            {resendTimer > 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {l.resendIn}{" "}
+                <span className="font-medium text-foreground">
+                  {resendTimer}s
+                </span>
+              </p>
+            ) : (
+              <button
+                onClick={handleResend}
+                disabled={isLoading}
+                className="text-sm text-primary font-medium hover:underline disabled:opacity-50"
+              >
+                {l.resend}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== MAIN LOGIN/REGISTER FORM =====
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
       {/* Logo */}
@@ -145,7 +467,11 @@ export default function LoginPage() {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
+      <form
+        onSubmit={isRegister ? handleRegister : handleLogin}
+        className="w-full max-w-sm space-y-4"
+      >
+        {/* Name (register only) */}
         {isRegister && (
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -155,11 +481,13 @@ export default function LoginPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="pl-10 h-12 rounded-xl"
-              required={isRegister}
+              required
+              autoComplete="name"
             />
           </div>
         )}
 
+        {/* Email */}
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -169,9 +497,28 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             className="pl-10 h-12 rounded-xl"
             required
+            autoComplete="email"
           />
         </div>
 
+        {/* Phone (register only) */}
+        {isRegister && (
+          <div className="relative">
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="tel"
+              placeholder={l.phonePlaceholder}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/[^\d+]/g, ""))}
+              className="pl-10 h-12 rounded-xl"
+              required
+              autoComplete="tel"
+              maxLength={15}
+            />
+          </div>
+        )}
+
+        {/* Password */}
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -181,6 +528,7 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="pl-10 pr-10 h-12 rounded-xl"
             required
+            autoComplete={isRegister ? "new-password" : "current-password"}
           />
           <button
             type="button"
@@ -195,19 +543,34 @@ export default function LoginPage() {
           </button>
         </div>
 
+        {/* Password Strength Checklist (register only) */}
+        {isRegister && password.length > 0 && (
+          <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground mb-2">
+              {l.pwStrength}
+            </p>
+            <PwCheck passed={pwChecks.minLength} label={l.pwMin} />
+            <PwCheck passed={pwChecks.hasUppercase} label={l.pwUpper} />
+            <PwCheck passed={pwChecks.hasLowercase} label={l.pwLower} />
+            <PwCheck passed={pwChecks.hasNumber} label={l.pwNumber} />
+            <PwCheck passed={pwChecks.hasSpecial} label={l.pwSpecial} />
+          </div>
+        )}
+
         {error && (
           <p className="text-sm text-destructive text-center">{error}</p>
         )}
 
+        {/* Submit */}
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || (isRegister && !allPwValid)}
           className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : isRegister ? (
-            l.register
+            l.sendOtp
           ) : (
             l.login
           )}
@@ -248,7 +611,7 @@ export default function LoginPage() {
         {l.google}
       </button>
 
-      {/* Toggle */}
+      {/* Toggle + Security badge */}
       <p className="text-sm text-muted-foreground mt-6">
         {isRegister ? l.hasAccount : l.noAccount}{" "}
         <button
@@ -261,6 +624,34 @@ export default function LoginPage() {
           {isRegister ? l.loginHere : l.registerHere}
         </button>
       </p>
+
+      <div className="flex items-center gap-1.5 mt-4 text-muted-foreground/60">
+        <ShieldCheck className="h-3.5 w-3.5" />
+        <span className="text-[11px]">{l.secureInfo}</span>
+      </div>
+    </div>
+  );
+}
+
+/** Password check item */
+function PwCheck({ passed, label }: { passed: boolean; label: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      {passed ? (
+        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+      ) : (
+        <Circle className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+      )}
+      <span
+        className={cn(
+          "text-xs transition-colors",
+          passed
+            ? "text-emerald-600 dark:text-emerald-400"
+            : "text-muted-foreground",
+        )}
+      >
+        {label}
+      </span>
     </div>
   );
 }

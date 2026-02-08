@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { LanguageSelector } from "@/components/settings/language-selector";
 import { WalletSection } from "@/components/settings/wallet-section";
+import { TelegramLinkSection } from "@/components/settings/telegram-link";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -193,15 +194,7 @@ export default function SettingsPage() {
         <Separator />
 
         {/* Integration */}
-        <div className="space-y-1">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            Integrasi
-          </p>
-          <SettingsItem
-            icon={<MessageCircle className="h-4 w-4 text-muted-foreground" />}
-            label={t.settings.connectTelegram}
-          />
-        </div>
+        <TelegramLinkSection />
 
         <Separator />
 

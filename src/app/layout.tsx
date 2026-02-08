@@ -5,6 +5,7 @@ import { LanguageProvider } from "@/contexts/language-context";
 import { ThemeProvider } from "@/contexts/theme-context";
 import { NotificationProvider } from "@/contexts/notification-context";
 import { AuthProvider } from "@/contexts/auth-context";
+import { AuthGuard } from "@/components/auth/auth-guard";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { AppShell } from "@/components/layout/app-shell";
 import { Toaster } from "@/components/ui/sonner";
@@ -67,11 +68,13 @@ export default function RootLayout({
         <LanguageProvider>
           <ThemeProvider>
             <AuthProvider>
-              <NotificationProvider>
-                <AppShell>{children}</AppShell>
-                <BottomNav />
-                <Toaster position="top-center" richColors />
-              </NotificationProvider>
+              <AuthGuard>
+                <NotificationProvider>
+                  <AppShell>{children}</AppShell>
+                  <BottomNav />
+                  <Toaster position="top-center" richColors />
+                </NotificationProvider>
+              </AuthGuard>
             </AuthProvider>
           </ThemeProvider>
         </LanguageProvider>
