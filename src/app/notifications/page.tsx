@@ -10,7 +10,10 @@ import { cn } from "@/lib/utils";
 import { CheckCheck, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-function timeAgo(date: Date, t: { justNow: string; minutesAgo: string; hoursAgo: string; daysAgo: string }): string {
+function timeAgo(
+  date: Date,
+  t: { justNow: string; minutesAgo: string; hoursAgo: string; daysAgo: string },
+): string {
   const now = Date.now();
   const diff = now - date.getTime();
   const minutes = Math.floor(diff / 60000);
@@ -37,7 +40,12 @@ function NotificationCard({
   onRemove,
 }: {
   notification: Notification;
-  timeTranslations: { justNow: string; minutesAgo: string; hoursAgo: string; daysAgo: string };
+  timeTranslations: {
+    justNow: string;
+    minutesAgo: string;
+    hoursAgo: string;
+    daysAgo: string;
+  };
   onRead: (id: string) => void;
   onRemove: (id: string) => void;
 }) {

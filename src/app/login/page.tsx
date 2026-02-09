@@ -182,7 +182,11 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) {
         // Check if account already exists
-        if (data.error?.includes("already") || data.error?.includes("sudah") || res.status === 409) {
+        if (
+          data.error?.includes("already") ||
+          data.error?.includes("sudah") ||
+          res.status === 409
+        ) {
           showToast("error", globalT.toast.accountExists);
           setError(globalT.toast.accountExists);
         } else {

@@ -62,7 +62,8 @@ export function BudgetProgress({
                   <span className="text-muted-foreground">
                     {/* {formatCurrency(budget.spent, currency)}{" "} */}
                     <span className="text-xs">
-                      {t.dashboard.limit} {formatCurrency(budget.limit, currency)}
+                      {t.dashboard.limit}{" "}
+                      {formatCurrency(budget.limit, currency)}
                     </span>
                   </span>
                 </div>

@@ -34,19 +34,21 @@ const TOAST_EMOJI: Record<ToastType, string> = {
 };
 
 const TOAST_BG: Record<ToastType, string> = {
-  success:
-    "bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900",
-  error:
-    "bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900",
-  warning:
-    "bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900",
-  info:
-    "bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900",
+  success: "bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900",
+  error: "bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900",
+  warning: "bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900",
+  info: "bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900",
 };
 
 const AUTO_DISMISS_MS = 3000;
 
-function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {
+function ToastItem({
+  toast,
+  onRemove,
+}: {
+  toast: Toast;
+  onRemove: (id: string) => void;
+}) {
   useEffect(() => {
     const timer = setTimeout(() => onRemove(toast.id), AUTO_DISMISS_MS);
     return () => clearTimeout(timer);

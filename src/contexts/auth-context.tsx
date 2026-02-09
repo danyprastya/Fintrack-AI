@@ -155,10 +155,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ).catch(() => null);
         if (userDoc?.exists() && userDoc.data()?.displayName) {
           // Update local profile with Firestore displayName
-          setProfile((prev) => prev ? {
-            ...prev,
-            displayName: userDoc.data()?.displayName || prev.displayName,
-          } : prev);
+          setProfile((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  displayName: userDoc.data()?.displayName || prev.displayName,
+                }
+              : prev,
+          );
         }
       }
     }
