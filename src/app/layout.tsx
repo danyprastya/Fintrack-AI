@@ -10,6 +10,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { AppShell } from "@/components/layout/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 import { DynamicIslandToastProvider } from "@/components/ui/dynamic-island-toast";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -81,6 +82,7 @@ export default function RootLayout({
             </AuthProvider>
           </ThemeProvider>
         </LanguageProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
