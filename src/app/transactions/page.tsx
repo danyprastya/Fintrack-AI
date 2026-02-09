@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Search, Plus, X } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
+import { useNavbar } from "@/contexts/navbar-context";
 import {
   getTransactions,
   getWallets,
@@ -43,6 +44,7 @@ export default function TransactionsPage() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const { showToast } = useDynamicIslandToast();
+  const { hide: hideNav, show: showNav } = useNavbar();
   const [filter, setFilter] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -93,10 +95,7 @@ export default function TransactionsPage() {
       try {
         await deleteTransaction(id);
         setTransactions((prev) => prev.filter((tx) => tx.id !== id));
-        showToast(
-          "success",
-          language === "id" ? "Transaksi dihapus" : "Transaction deleted",
-        );
+        showToast("success", t.toast.transactionDeleted);
       } catch (err) {
         console.error("Delete error:", err);
         showToast(
@@ -105,7 +104,7 @@ export default function TransactionsPage() {
         );
       }
     },
-    [showToast, language],
+    [showToast, language, t],
   );
 
   const handleAdd = useCallback(async () => {
@@ -127,11 +126,9 @@ export default function TransactionsPage() {
         date: Timestamp.now(),
         source: "manual",
       });
-      showToast(
-        "success",
-        language === "id" ? "Transaksi ditambahkan" : "Transaction added",
-      );
+      showToast("success", t.toast.transactionAdded);
       setShowAddForm(false);
+      showNav();
       setAddAmount("");
       setAddDesc("");
       setAddCategory("others");
@@ -155,6 +152,8 @@ export default function TransactionsPage() {
     showToast,
     language,
     loadData,
+    showNav,
+    t,
   ]);
 
   // Group and filter transactions for display
@@ -180,7 +179,10 @@ export default function TransactionsPage() {
           <Button
             size="sm"
             className="h-8 rounded-xl text-xs"
-            onClick={() => setShowAddForm(true)}
+            onClick={() => {
+              setShowAddForm(true);
+              hideNav();
+            }}
           >
             <Plus className="h-3.5 w-3.5 mr-1" />
             {t.general.add}
@@ -236,7 +238,10 @@ export default function TransactionsPage() {
                 {language === "id" ? "Tambah Transaksi" : "Add Transaction"}
               </h3>
               <button
-                onClick={() => setShowAddForm(false)}
+                onClick={() => {
+                  setShowAddForm(false);
+                  showNav();
+                }}
                 className="p-1 rounded-full hover:bg-muted"
               >
                 <X className="h-5 w-5" />
@@ -311,20 +316,27 @@ export default function TransactionsPage() {
 
             {/* Wallet selector */}
             {wallets.length > 0 && (
-              <select
-                value={addWalletId}
-                onChange={(e) => setAddWalletId(e.target.value)}
-                className="w-full h-10 rounded-xl bg-muted px-3 text-sm"
-              >
-                <option value="">
-                  {language === "id" ? "Pilih dompet" : "Select wallet"}
-                </option>
-                {wallets.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.icon} {w.name}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">
+                  {addType === "income"
+                    ? t.settings.depositTo
+                    : t.settings.payFrom}
+                </label>
+                <select
+                  value={addWalletId}
+                  onChange={(e) => setAddWalletId(e.target.value)}
+                  className="w-full h-10 rounded-xl bg-muted px-3 text-sm"
+                >
+                  <option value="">
+                    {language === "id" ? "Pilih dompet" : "Select wallet"}
                   </option>
-                ))}
-              </select>
+                  {wallets.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.icon} {w.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
 
             {/* Save button */}

@@ -87,8 +87,13 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Generate link code error:", error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("Detail:", errMsg);
     return NextResponse.json(
-      { error: "Terjadi kesalahan server." },
+      {
+        error: "Terjadi kesalahan server.",
+        detail: process.env.NODE_ENV === "development" ? errMsg : undefined,
+      },
       { status: 500 }
     );
   }

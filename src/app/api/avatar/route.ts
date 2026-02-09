@@ -7,8 +7,8 @@ import {
   isR2Configured,
 } from "@/services/cloudflare/r2";
 
-// Max file size: 2 MB
-const MAX_FILE_SIZE = 2 * 1024 * 1024;
+// Max file size: 10 MB (photos go through client-side crop/resize to 512x512)
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 /** Extract and verify Firebase ID token from Authorization header */
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     // Validate size
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: "File too large. Max 2 MB" },
+        { error: "File too large. Max 10 MB" },
         { status: 400 },
       );
     }

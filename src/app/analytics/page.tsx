@@ -54,6 +54,24 @@ export default function AnalyticsPage() {
       .finally(() => setIsLoading(false));
   }, [user?.uid]);
 
+  // Auto-refresh when page gains focus (e.g. user switches back from another tab/page)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user?.uid) {
+        getTransactions(user.uid, 500)
+          .then(setTransactions)
+          .catch(console.error);
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") handleFocus();
+    });
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [user?.uid]);
+
   // Compute analytics data based on selected period
   const { totalIncome, totalExpense, categoryData, totalSpending } =
     useMemo(() => {
@@ -89,10 +107,9 @@ export default function AnalyticsPage() {
         else if (tx.type === "expense") expense += tx.amount;
       }
 
-      // Category spending (expense only)
+      // Category spending (all types for breakdown)
       const catMap = new Map<string, { icon: string; amount: number }>();
       for (const tx of filtered) {
-        if (tx.type !== "expense") continue;
         const key = tx.category || "others";
         const existing = catMap.get(key) || {
           icon: tx.categoryIcon || "📦",

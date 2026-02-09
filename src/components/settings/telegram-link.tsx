@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useLanguage } from "@/contexts/language-context";
+import { useDynamicIslandToast } from "@/components/ui/dynamic-island-toast";
 import { cn } from "@/lib/utils";
 import {
   MessageCircle,
@@ -16,6 +17,7 @@ import {
 export function TelegramLinkSection() {
   const { user } = useAuth();
   const { language } = useLanguage();
+  const { showToast } = useDynamicIslandToast();
 
   const [code, setCode] = useState<string | null>(null);
   const [expiresIn, setExpiresIn] = useState(0);
@@ -96,6 +98,7 @@ export function TelegramLinkSection() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || l.error);
+        showToast("error", data.error || l.error);
         return;
       }
 
@@ -105,6 +108,7 @@ export function TelegramLinkSection() {
       setLinkedUsername(data.linkedUsername);
     } catch {
       setError(l.error);
+      showToast("error", l.error);
     } finally {
       setIsLoading(false);
     }
@@ -122,8 +126,10 @@ export function TelegramLinkSection() {
       setIsLinked(false);
       setLinkedUsername(null);
       setCode(null);
+      showToast("success", l.unlinkConfirm);
     } catch {
       setError(l.error);
+      showToast("error", l.error);
     } finally {
       setIsLoading(false);
     }
@@ -133,8 +139,9 @@ export function TelegramLinkSection() {
     if (!code) return;
     navigator.clipboard.writeText(`/link ${code}`);
     setCopied(true);
+    showToast("success", l.copied);
     setTimeout(() => setCopied(false), 2000);
-  }, [code]);
+  }, [code, showToast, l.copied]);
 
   const botName = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "YourBot";
 

@@ -7,6 +7,8 @@ import { useDynamicIslandToast } from "@/components/ui/dynamic-island-toast";
 import { useRouter } from "next/navigation";
 import { getFirebaseAuth } from "@/lib/firebase";
 import { PageHeader } from "@/components/shared/page-header";
+import { ConfirmationDialog } from "@/components/shared/confirmation-dialog";
+import { PhotoCropDialog } from "@/components/profile/photo-crop-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Camera, LogOut, Loader2, Save, Trash2 } from "lucide-react";
@@ -25,6 +27,8 @@ export default function ProfilePage() {
   const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   const t = {
     id: {
@@ -39,7 +43,7 @@ export default function ProfilePage() {
       photoHint: "Ketuk untuk ganti foto",
       deletePhoto: "Hapus Foto",
       uploading: "Mengunggah...",
-      photoMaxSize: "Maks 2 MB (JPG, PNG, WebP)",
+      photoMaxSize: "JPG, PNG, WebP",
       photoSuccess: "Foto berhasil diperbarui!",
       photoDeleted: "Foto berhasil dihapus",
       photoError: "Gagal mengunggah foto",
@@ -56,7 +60,7 @@ export default function ProfilePage() {
       photoHint: "Tap to change photo",
       deletePhoto: "Delete Photo",
       uploading: "Uploading...",
-      photoMaxSize: "Max 2 MB (JPG, PNG, WebP)",
+      photoMaxSize: "JPG, PNG, WebP",
       photoSuccess: "Photo updated successfully!",
       photoDeleted: "Photo deleted successfully",
       photoError: "Failed to upload photo",
@@ -74,7 +78,7 @@ export default function ProfilePage() {
     return fireAuth.currentUser.getIdToken();
   }
 
-  /** Handle file selection for avatar upload */
+  /** Handle file selection — open crop dialog */
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -85,7 +89,8 @@ export default function ProfilePage() {
     // Validate type
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      setPhotoError(
+      showToast(
+        "error",
         language === "id"
           ? "Format tidak didukung. Gunakan JPG, PNG, atau WebP"
           : "Unsupported format. Use JPG, PNG, or WebP",
@@ -93,18 +98,19 @@ export default function ProfilePage() {
       return;
     }
 
-    // Validate size (2 MB)
-    if (file.size > 2 * 1024 * 1024) {
-      setPhotoError(
-        language === "id"
-          ? "Ukuran file maks 2 MB"
-          : "File size must be under 2 MB",
-      );
-      return;
-    }
+    // Open crop dialog instead of direct upload
+    setCropFile(file);
+
+    // Reset file input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  /** Upload cropped blob */
+  const handleCropConfirm = async (blob: Blob) => {
+    setCropFile(null);
 
     // Show preview immediately
-    const previewUrl = URL.createObjectURL(file);
+    const previewUrl = URL.createObjectURL(blob);
     setPhotoPreview(previewUrl);
     setIsUploadingPhoto(true);
 
@@ -113,7 +119,7 @@ export default function ProfilePage() {
       if (!idToken) throw new Error("Not authenticated");
 
       const formData = new FormData();
-      formData.append("avatar", file);
+      formData.append("avatar", blob, "avatar.jpg");
 
       const res = await fetch("/api/avatar", {
         method: "POST",
@@ -134,13 +140,10 @@ export default function ProfilePage() {
       showToast("success", globalT.toast.photoUpdated);
     } catch (err) {
       console.error("Avatar upload failed:", err);
-      setPhotoError(l.photoError);
       setPhotoPreview(null); // Revert preview
       showToast("error", globalT.toast.photoFailed);
     } finally {
       setIsUploadingPhoto(false);
-      // Reset file input
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -183,9 +186,12 @@ export default function ProfilePage() {
     setIsSaving(true);
     try {
       await updateUserProfile({ displayName: displayName.trim() });
-      showToast("success", globalT.toast.profileSaved);
+      showToast("success", globalT.toast.nameSaved);
     } catch {
-      // silent
+      showToast(
+        "error",
+        language === "id" ? "Gagal menyimpan" : "Failed to save",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -195,8 +201,13 @@ export default function ProfilePage() {
     setIsSigningOut(true);
     try {
       await signOut();
+      showToast("success", globalT.toast.signOutSuccess);
       router.push("/login");
     } catch {
+      showToast(
+        "error",
+        language === "id" ? "Gagal keluar" : "Sign out failed",
+      );
       setIsSigningOut(false);
     }
   };
@@ -335,7 +346,7 @@ export default function ProfilePage() {
 
         {/* Sign Out */}
         <button
-          onClick={handleSignOut}
+          onClick={() => setShowSignOutConfirm(true)}
           disabled={isSigningOut}
           className="w-full h-12 rounded-xl border border-destructive/30 text-destructive font-semibold hover:bg-destructive/5 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
@@ -349,6 +360,28 @@ export default function ProfilePage() {
           )}
         </button>
       </div>
+
+      {/* Sign Out Confirmation */}
+      <ConfirmationDialog
+        open={showSignOutConfirm}
+        title={globalT.settings.signOutTitle}
+        message={globalT.settings.signOutConfirm}
+        confirmLabel={l.signOut}
+        cancelLabel={globalT.settings.cancel}
+        onConfirm={handleSignOut}
+        onCancel={() => setShowSignOutConfirm(false)}
+        danger
+        isLoading={isSigningOut}
+      />
+
+      {/* Photo Crop Dialog */}
+      {cropFile && (
+        <PhotoCropDialog
+          file={cropFile}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropFile(null)}
+        />
+      )}
     </div>
   );
 }

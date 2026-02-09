@@ -11,6 +11,7 @@ import {
   BarChart3,
   Settings,
 } from "lucide-react";
+import { useNavbar } from "@/contexts/navbar-context";
 
 const NAV_ITEMS = [
   { href: "/", icon: Home, labelKey: "home" as const },
@@ -27,9 +28,10 @@ const NAV_ITEMS = [
 export function BottomNav() {
   const pathname = usePathname();
   const { t } = useLanguage();
+  const { visible } = useNavbar();
 
-  // Hide bottom nav on login and profile pages
-  if (pathname === "/login" || pathname === "/profile") {
+  // Hide bottom nav on login, profile pages, or when explicitly hidden
+  if (pathname === "/login" || pathname === "/profile" || !visible) {
     return null;
   }
 

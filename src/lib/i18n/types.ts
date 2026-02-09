@@ -123,6 +123,21 @@ export interface Translations {
     bank: string;
     ewallet: string;
     noWallets: string;
+    signOutConfirm: string;
+    signOutTitle: string;
+    aboutDesc: string;
+    currencyDesc: string;
+    securityDesc: string;
+    exportDesc: string;
+    budgetDesc: string;
+    categoriesDesc: string;
+    changePassword: string;
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+    selectCurrency: string;
+    depositTo: string;
+    payFrom: string;
   };
 
   // Notifications page
@@ -162,6 +177,23 @@ export interface Translations {
     popupClosed: string;
     unauthorized: string;
     googleNotEnabled: string;
+    signOutSuccess: string;
+    transactionAdded: string;
+    transactionDeleted: string;
+    walletAdded: string;
+    walletDeleted: string;
+    dataExported: string;
+    passwordChanged: string;
+    passwordFailed: string;
+    currencyChanged: string;
+    budgetSaved: string;
+    telegramError: string;
+    telegramLinked: string;
+    telegramUnlinked: string;
+    codeCopied: string;
+    ocrSaved: string;
+    ocrFailed: string;
+    nameSaved: string;
   };
 
   // Categories

@@ -10,6 +10,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { AppShell } from "@/components/layout/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 import { DynamicIslandToastProvider } from "@/components/ui/dynamic-island-toast";
+import { NavbarProvider } from "@/contexts/navbar-context";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = Geist({
@@ -73,8 +74,10 @@ export default function RootLayout({
               <AuthGuard>
                 <NotificationProvider>
                   <DynamicIslandToastProvider>
-                    <AppShell>{children}</AppShell>
-                    <BottomNav />
+                    <NavbarProvider>
+                      <AppShell>{children}</AppShell>
+                      <BottomNav />
+                    </NavbarProvider>
                     <Toaster position="top-center" richColors />
                   </DynamicIslandToastProvider>
                 </NotificationProvider>
