@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { useLanguage } from "@/contexts/language-context";
 import { useAuth } from "@/contexts/auth-context";
 import { useTheme } from "@/contexts/theme-context";
 import { useNotifications } from "@/contexts/notification-context";
+import { useDynamicIslandToast } from "@/components/ui/dynamic-island-toast";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { LanguageSelector } from "@/components/settings/language-selector";
@@ -22,8 +24,7 @@ import {
   Moon,
   Tag,
 } from "lucide-react";
-
-// No demo wallets — will come from Firestore
+import { getWallets, type WalletDoc } from "@/lib/firestore-service";
 
 interface SettingsItemProps {
   icon: React.ReactNode;
@@ -68,15 +69,44 @@ function SettingsItem({
 }
 
 export default function SettingsPage() {
-  const { t } = useLanguage();
-  const { profile } = useAuth();
+  const { t, language } = useLanguage();
+  const { profile, user, signOut } = useAuth();
   const { resolvedTheme, toggleTheme } = useTheme();
   const { unreadCount } = useNotifications();
+  const { showToast } = useDynamicIslandToast();
   const router = useRouter();
+  const [wallets, setWallets] = useState<WalletDoc[]>([]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    getWallets(user.uid).then(setWallets).catch(console.error);
+  }, [user?.uid]);
+
+  const handleSignOut = useCallback(async () => {
+    try {
+      await signOut();
+      router.push("/login");
+    } catch (err) {
+      console.error("Sign out error:", err);
+      showToast(
+        "error",
+        language === "id" ? "Gagal keluar" : "Sign out failed",
+      );
+    }
+  }, [signOut, router, showToast, language]);
 
   const userName = profile?.displayName || t.settings.profile;
   const userEmail = profile?.email || "";
   const initials = userName.charAt(0).toUpperCase();
+
+  // Map WalletDoc to WalletData for the component
+  const walletData = wallets.map((w) => ({
+    id: w.id,
+    name: w.name,
+    type: (w.type as "cash" | "bank" | "ewallet") || "cash",
+    balance: w.balance || 0,
+    icon: w.icon || "💳",
+  }));
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -112,8 +142,13 @@ export default function SettingsPage() {
 
         <Separator />
 
-        {/* Wallets — empty until user adds wallets */}
-        <WalletSection wallets={[]} />
+        {/* Wallets — fetched from Firestore */}
+        <WalletSection
+          wallets={walletData}
+          onRefresh={() => {
+            if (user?.uid) getWallets(user.uid).then(setWallets);
+          }}
+        />
 
         <Separator />
 
@@ -211,6 +246,7 @@ export default function SettingsPage() {
             icon={<LogOut className="h-4 w-4 text-destructive" />}
             label={t.settings.signOut}
             danger
+            onClick={handleSignOut}
           />
         </div>
 

@@ -15,18 +15,123 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  getWallets,
+  getRecentTransactions,
+  getBudgets,
+  computeTotalBalance,
+  computeMonthlyTotals,
+  type WalletDoc,
+  type TransactionDoc,
+  type BudgetDoc,
+} from "@/lib/firestore-service";
 
 export default function DashboardPage() {
   const { t } = useLanguage();
-  const { profile, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, profile, isAuthenticated, isLoading: authLoading } = useAuth();
   const { unreadCount } = useNotifications();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
 
+  // Real data from Firestore
+  const [totalBalance, setTotalBalance] = useState(0);
+  const [monthlyIncome, setMonthlyIncome] = useState(0);
+  const [monthlyExpense, setMonthlyExpense] = useState(0);
+  const [recentTx, setRecentTx] = useState<
+    {
+      id: string;
+      type: "income" | "expense" | "transfer";
+      amount: number;
+      description: string;
+      category: string;
+      categoryIcon: string;
+      date: string;
+    }[]
+  >([]);
+  const [budgets, setBudgets] = useState<
+    {
+      id: string;
+      categoryName: string;
+      categoryIcon: string;
+      spent: number;
+      limit: number;
+      color: string;
+    }[]
+  >([]);
+
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1200);
-    return () => clearTimeout(timer);
-  }, []);
+    async function loadDashboard() {
+      if (!user?.uid) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
+
+        // Fetch all data in parallel
+        const [wallets, transactions, budgetDocs] = await Promise.all([
+          getWallets(user.uid),
+          getRecentTransactions(user.uid, 10),
+          getBudgets(user.uid, month, year).catch(() => [] as BudgetDoc[]),
+        ]);
+
+        // Balance from wallets
+        setTotalBalance(computeTotalBalance(wallets));
+
+        // Monthly totals from recent transactions (fetch more for full month)
+        const { income, expense } = computeMonthlyTotals(
+          transactions,
+          month,
+          year,
+        );
+        setMonthlyIncome(income);
+        setMonthlyExpense(expense);
+
+        // Recent transactions for display (take 5)
+        setRecentTx(
+          transactions.slice(0, 5).map((tx) => {
+            const d =
+              tx.date?.toDate?.() || tx.createdAt?.toDate?.() || new Date();
+            return {
+              id: tx.id,
+              type: tx.type,
+              amount: tx.amount,
+              description: tx.description,
+              category: tx.category || "others",
+              categoryIcon: tx.categoryIcon || "📦",
+              date: d.toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            };
+          }),
+        );
+
+        // Budgets
+        setBudgets(
+          budgetDocs.map((b) => ({
+            id: b.id,
+            categoryName: b.categoryName,
+            categoryIcon: b.categoryIcon,
+            spent: b.spent || 0,
+            limit: b.limit || 0,
+            color: b.color || "#6b7280",
+          })),
+        );
+      } catch (err) {
+        console.error("Dashboard load error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    if (!authLoading) {
+      loadDashboard();
+    }
+  }, [user?.uid, authLoading]);
 
   if (isLoading || authLoading) {
     return <ShimmerDashboard />;
@@ -82,7 +187,11 @@ export default function DashboardPage() {
       </div>
 
       {/* Balance Card */}
-      <BalanceCard totalBalance={0} income={0} expense={0} />
+      <BalanceCard
+        totalBalance={totalBalance}
+        income={monthlyIncome}
+        expense={monthlyExpense}
+      />
 
       {/* Quick Actions */}
       <QuickActions />
@@ -90,11 +199,11 @@ export default function DashboardPage() {
       {/* Currency Converter */}
       <CurrencyConverterWidget />
 
-      {/* Recent Transactions — empty */}
-      <RecentTransactions transactions={[]} />
+      {/* Recent Transactions */}
+      <RecentTransactions transactions={recentTx} />
 
-      {/* Budget Progress — empty */}
-      <BudgetProgress budgets={[]} />
+      {/* Budget Progress */}
+      <BudgetProgress budgets={budgets} />
     </div>
   );
 }

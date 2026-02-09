@@ -6,7 +6,7 @@
 #   .\scripts\setup-webhook.ps1 https://xxxx.ngrok-free.dev
 
 param(
-    [Parameter(Mandatory=$true, Position=0)]
+    [Parameter(Mandatory = $true, Position = 0)]
     [string]$BaseUrl
 )
 
@@ -32,11 +32,13 @@ try {
         if ($result.results.webhookUrl) {
             Write-Host "  Webhook: $($result.results.webhookUrl)" -ForegroundColor Gray
         }
-    } else {
+    }
+    else {
         Write-Host "  WARN Setup returned unexpected result" -ForegroundColor Yellow
         $result | ConvertTo-Json -Depth 5 | Write-Host
     }
-} catch {
+}
+catch {
     Write-Host "  FAIL Setup endpoint error: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host ""
     Write-Host "Falling back to direct Telegram API..." -ForegroundColor Yellow
@@ -48,8 +50,8 @@ try {
         if ($token) {
             try {
                 $webhookBody = @{
-                    url = "$BaseUrl/api/bot/webhook"
-                    allowed_updates = @("message")
+                    url                  = "$BaseUrl/api/bot/webhook"
+                    allowed_updates      = @("message")
                     drop_pending_updates = $true
                 } | ConvertTo-Json
                 
@@ -57,7 +59,8 @@ try {
                 if ($webhookResult.ok) {
                     Write-Host "  OK Webhook set via Telegram API!" -ForegroundColor Green
                 }
-            } catch {
+            }
+            catch {
                 Write-Host "  FAIL Telegram API error: $($_.Exception.Message)" -ForegroundColor Red
             }
         }
@@ -82,15 +85,18 @@ try {
             if ($info.result.last_error_message) {
                 Write-Host "  WARN Last error: $($info.result.last_error_message)" -ForegroundColor Yellow
             }
-        } else {
+        }
+        else {
             Write-Host "  WARN Webhook URL mismatch!" -ForegroundColor Yellow
             Write-Host "  Expected: $BaseUrl/api/bot/webhook" -ForegroundColor Gray
             Write-Host "  Got:      $($info.result.url)" -ForegroundColor Gray
         }
-    } else {
+    }
+    else {
         Write-Host "  SKIP Could not read bot token from .env.local" -ForegroundColor Yellow
     }
-} catch {
+}
+catch {
     Write-Host "  FAIL Verify error: $($_.Exception.Message)" -ForegroundColor Red
 }
 
@@ -103,7 +109,8 @@ try {
     if ($testResult.status) {
         Write-Host "  OK Endpoint reachable: $($testResult.status)" -ForegroundColor Green
     }
-} catch {
+}
+catch {
     Write-Host "  FAIL Endpoint not reachable: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host "  Make sure your app is running and accessible." -ForegroundColor Yellow
 }

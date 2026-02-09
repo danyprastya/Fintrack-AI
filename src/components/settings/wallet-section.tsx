@@ -1,11 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
+import { useAuth } from "@/contexts/auth-context";
+import { useDynamicIslandToast } from "@/components/ui/dynamic-island-toast";
 import { formatCurrency } from "@/lib/utils/currency";
-import { Wallet, Plus } from "lucide-react";
+import { Wallet, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { createWallet, deleteWallet } from "@/lib/firestore-service";
 
 interface WalletData {
   id: string;
@@ -19,6 +24,7 @@ interface WalletSectionProps {
   wallets: WalletData[];
   currency?: string;
   className?: string;
+  onRefresh?: () => void;
 }
 
 const WALLET_COLORS: Record<string, string> = {
@@ -27,20 +33,75 @@ const WALLET_COLORS: Record<string, string> = {
   ewallet: "from-violet-500/10 to-violet-500/5 border-violet-200/50",
 };
 
+const WALLET_TYPES: { key: "cash" | "bank" | "ewallet"; icon: string }[] = [
+  { key: "cash", icon: "💵" },
+  { key: "bank", icon: "🏦" },
+  { key: "ewallet", icon: "📱" },
+];
+
 export function WalletSection({
   wallets,
   currency = "IDR",
   className,
+  onRefresh,
 }: WalletSectionProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { user } = useAuth();
+  const { showToast } = useDynamicIslandToast();
+  const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState("");
+  const [type, setType] = useState<"cash" | "bank" | "ewallet">("cash");
+  const [balance, setBalance] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const walletTypeLabel = (type: string): string => {
+  const walletTypeLabel = (wType: string): string => {
     const labels: Record<string, string> = {
       cash: t.settings.cash,
       bank: t.settings.bank,
       ewallet: t.settings.ewallet,
     };
-    return labels[type] || type;
+    return labels[wType] || wType;
+  };
+
+  const handleAdd = async () => {
+    if (!user?.uid || !name.trim()) return;
+    setIsSaving(true);
+    try {
+      const icon = WALLET_TYPES.find((w) => w.key === type)?.icon || "💳";
+      await createWallet({
+        userId: user.uid,
+        name: name.trim(),
+        type,
+        balance: parseFloat(balance) || 0,
+        icon,
+      });
+      showToast(
+        "success",
+        language === "id" ? "Dompet ditambahkan" : "Wallet added",
+      );
+      setShowForm(false);
+      setName("");
+      setBalance("");
+      onRefresh?.();
+    } catch (err) {
+      console.error("Add wallet error:", err);
+      showToast("error", language === "id" ? "Gagal menambahkan" : "Failed");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteWallet(id);
+      showToast(
+        "success",
+        language === "id" ? "Dompet dihapus" : "Wallet deleted",
+      );
+      onRefresh?.();
+    } catch (err) {
+      console.error("Delete wallet error:", err);
+    }
   };
 
   return (
@@ -50,13 +111,77 @@ export function WalletSection({
           <Wallet className="h-4 w-4 text-muted-foreground" />
           {t.settings.wallets}
         </div>
-        <Button variant="ghost" size="sm" className="h-8 text-xs text-primary">
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          {t.settings.addWallet}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 text-xs text-primary"
+          onClick={() => setShowForm(!showForm)}
+        >
+          {showForm ? (
+            <X className="h-3.5 w-3.5 mr-1" />
+          ) : (
+            <Plus className="h-3.5 w-3.5 mr-1" />
+          )}
+          {showForm
+            ? language === "id"
+              ? "Batal"
+              : "Cancel"
+            : t.settings.addWallet}
         </Button>
       </div>
 
-      {wallets.length === 0 ? (
+      {/* Add Wallet Form */}
+      {showForm && (
+        <Card className="border">
+          <CardContent className="p-3 space-y-3">
+            <Input
+              placeholder={language === "id" ? "Nama dompet" : "Wallet name"}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="h-9 text-sm rounded-lg"
+            />
+            <div className="flex gap-2">
+              {WALLET_TYPES.map((wt) => (
+                <button
+                  key={wt.key}
+                  onClick={() => setType(wt.key)}
+                  className={cn(
+                    "flex-1 py-2 rounded-lg text-xs font-medium transition-all",
+                    type === wt.key
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {wt.icon} {walletTypeLabel(wt.key)}
+                </button>
+              ))}
+            </div>
+            <Input
+              type="number"
+              inputMode="numeric"
+              placeholder={language === "id" ? "Saldo awal" : "Initial balance"}
+              value={balance}
+              onChange={(e) => setBalance(e.target.value)}
+              className="h-9 text-sm rounded-lg"
+            />
+            <Button
+              className="w-full h-9 rounded-lg text-sm"
+              disabled={isSaving || !name.trim()}
+              onClick={handleAdd}
+            >
+              {isSaving
+                ? language === "id"
+                  ? "Menyimpan..."
+                  : "Saving..."
+                : language === "id"
+                  ? "Simpan"
+                  : "Save"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {wallets.length === 0 && !showForm ? (
         <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
           <span className="text-3xl mb-2">👛</span>
           <p className="text-sm font-medium">{t.emptyState.noWallets}</p>
@@ -84,9 +209,17 @@ export function WalletSection({
                     </p>
                   </div>
                 </div>
-                <p className="text-sm font-bold">
-                  {formatCurrency(wallet.balance, currency)}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold">
+                    {formatCurrency(wallet.balance, currency)}
+                  </p>
+                  <button
+                    onClick={() => handleDelete(wallet.id)}
+                    className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </CardContent>
             </Card>
           ))}

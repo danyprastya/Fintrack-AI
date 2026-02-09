@@ -12,6 +12,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { DynamicIslandToastProvider } from "@/components/ui/dynamic-island-toast";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
+import { SpeedInsights } from "@vercel/speed-insights/next"
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -74,6 +76,7 @@ export default function RootLayout({
                 <NotificationProvider>
                   <DynamicIslandToastProvider>
                     <AppShell>{children}</AppShell>
+                    <SpeedInsights />
                     <BottomNav />
                     <Toaster position="top-center" richColors />
                   </DynamicIslandToastProvider>

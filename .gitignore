@@ -28,6 +28,7 @@ firestore.rules
 DATABASE_SCHEMA.md
 fintrack-aaf27-firebase-adminsdk-fbsvc-4ba55fa8cc.json
 SETUP_GUIDE.md
+/scripts/
 
 # debug
 npm-debug.log*
