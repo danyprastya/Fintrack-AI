@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
 
 interface ShimmerProps {
   className?: string;
@@ -9,19 +8,19 @@ interface ShimmerProps {
 
 /**
  * Synchronized shimmer loader components.
- * All shimmer elements use the same CSS animation class
- * so they pulse in sync, creating a unified loading effect.
+ * Uses CSS pseudo-element shimmer sweep animation.
+ * File: src/components/shared/shimmer-loader.tsx
  */
 
 export function ShimmerLine({ className }: ShimmerProps) {
   return (
-    <Skeleton className={cn("shimmer h-4 w-full rounded-md", className)} />
+    <div className={cn("shimmer h-4 w-full rounded-md", className)} />
   );
 }
 
 export function ShimmerCircle({ className }: ShimmerProps) {
   return (
-    <Skeleton className={cn("shimmer h-10 w-10 rounded-full", className)} />
+    <div className={cn("shimmer h-10 w-10 rounded-full", className)} />
   );
 }
 
@@ -108,7 +107,7 @@ export function ShimmerQuickActions({ className }: ShimmerProps) {
     <div className={cn("grid grid-cols-4 gap-3", className)}>
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="flex flex-col items-center gap-2">
-          <Skeleton className="shimmer h-12 w-12 rounded-2xl" />
+          <div className="shimmer h-12 w-12 rounded-2xl" />
           <ShimmerLine className="h-3 w-12" />
         </div>
       ))}

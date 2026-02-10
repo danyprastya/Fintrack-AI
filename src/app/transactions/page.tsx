@@ -7,7 +7,15 @@ import { useDynamicIslandToast } from "@/components/ui/dynamic-island-toast";
 import { PageHeader } from "@/components/shared/page-header";
 import { TransactionList } from "@/components/transactions/transaction-list";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Search, Plus, X } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
@@ -264,12 +272,10 @@ export default function TransactionsPage() {
             </div>
 
             {/* Amount */}
-            <Input
-              type="number"
-              inputMode="numeric"
+            <CurrencyInput
               placeholder={t.transactions.amountPlaceholder}
               value={addAmount}
-              onChange={(e) => setAddAmount(e.target.value)}
+              onChange={(v) => setAddAmount(v)}
               className="h-12 text-lg rounded-xl"
             />
 
@@ -309,18 +315,21 @@ export default function TransactionsPage() {
                     ? t.settings.depositTo
                     : t.settings.payFrom}
                 </label>
-                <select
+                <Select
                   value={addWalletId}
-                  onChange={(e) => setAddWalletId(e.target.value)}
-                  className="w-full h-10 rounded-xl bg-muted px-3 text-sm"
+                  onValueChange={(v) => setAddWalletId(v)}
                 >
-                  <option value="">{t.transactions.selectWallet}</option>
-                  {wallets.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.icon} {w.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full h-10 rounded-xl">
+                    <SelectValue placeholder={t.transactions.selectWallet} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {wallets.map((w) => (
+                      <SelectItem key={w.id} value={w.id}>
+                        {w.icon} {w.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
 

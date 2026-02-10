@@ -9,6 +9,7 @@ import { formatCurrency } from "@/lib/utils/currency";
 import { Wallet, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { createWallet, deleteWallet } from "@/lib/firestore-service";
 
@@ -146,12 +147,10 @@ export function WalletSection({
                 </button>
               ))}
             </div>
-            <Input
-              type="number"
-              inputMode="numeric"
+            <CurrencyInput
               placeholder={t.settings.initialBalance}
               value={balance}
-              onChange={(e) => setBalance(e.target.value)}
+              onChange={(v) => setBalance(v)}
               className="h-9 text-sm rounded-lg"
             />
             <Button

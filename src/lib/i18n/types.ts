@@ -78,6 +78,7 @@ export interface Translations {
   analytics: {
     title: string;
     spendingByCategory: string;
+    incomeByCategory: string;
     monthlyTrend: string;
     incomeVsExpense: string;
     topSpending: string;
@@ -89,6 +90,10 @@ export interface Translations {
     totalIncome: string;
     totalExpense: string;
     netBalance: string;
+    income: string;
+    expense: string;
+    net: string;
+    all: string;
   };
 
   // Settings
@@ -134,6 +139,7 @@ export interface Translations {
     securityDesc: string;
     exportDesc: string;
     budgetDesc: string;
+    budgetAmount: string;
     categoriesDesc: string;
     changePassword: string;
     currentPassword: string;
@@ -166,6 +172,7 @@ export interface Translations {
     registerHere: string;
     loginHere: string;
     errorLogin: string;
+    useGoogleLogin: string;
     errorGoogle: string;
     sendOtp: string;
     verifyTitle: string;
@@ -296,6 +303,7 @@ export interface Translations {
     passwordTooShort: string;
     currencyChanged: string;
     budgetSaved: string;
+    budgetDeleted: string;
     telegramError: string;
     telegramLinked: string;
     telegramUnlinked: string;

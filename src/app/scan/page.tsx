@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useLanguage } from "@/contexts/language-context";
 import { useAuth } from "@/contexts/auth-context";
+import { useNavbar } from "@/contexts/navbar-context";
 import { useDynamicIslandToast } from "@/components/ui/dynamic-island-toast";
 import { PageHeader } from "@/components/shared/page-header";
 import { CameraView } from "@/components/scan/camera-view";
@@ -28,9 +29,16 @@ export default function ScanPage() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { showToast } = useDynamicIslandToast();
+  const { hide, show } = useNavbar();
   const [state, setState] = useState<ScanState>("camera");
   const [result, setResult] = useState<ScanResult | null>(null);
   const [wallets, setWallets] = useState<WalletDoc[]>([]);
+
+  // Hide navbar on mount, show on unmount
+  useEffect(() => {
+    hide();
+    return () => show();
+  }, [hide, show]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -41,7 +49,6 @@ export default function ScanPage() {
     setState("processing");
 
     try {
-      // Send image to server-side Gemini Flash OCR API
       const formData = new FormData();
       formData.append("image", image);
 
@@ -64,9 +71,10 @@ export default function ScanPage() {
       setState("result");
     } catch (error) {
       console.error("OCR Error:", error);
+      showToast("error", t.toast.ocrFailed);
       setState("camera");
     }
-  }, []);
+  }, [showToast, t]);
 
   const handleSave = useCallback(
     async (data: { total: number; merchant: string; date: string }) => {
@@ -77,7 +85,6 @@ export default function ScanPage() {
           ? categorizeMerchant(data.merchant)
           : "others";
 
-        // Map category name to icon
         const CATEGORY_ICONS: Record<string, string> = {
           foodDrinks: "🍔",
           transportation: "🚗",
@@ -123,8 +130,8 @@ export default function ScanPage() {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <PageHeader title={t.scan.title} />
+    <div className="flex flex-col min-h-screen pb-safe">
+      <PageHeader title={t.scan.title} showBack />
 
       <div className="flex-1 p-4 space-y-4">
         {state === "camera" && (

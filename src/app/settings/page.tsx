@@ -34,8 +34,16 @@ import {
 import {
   getWallets,
   getTransactions,
+  getBudgets,
+  createBudget,
+  updateBudget,
+  deleteBudget,
+  updateWallet,
   type WalletDoc,
+  type BudgetDoc,
 } from "@/lib/firestore-service";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { convertCurrency } from "@/lib/utils/exchange-rates";
 import { getFirebaseAuth } from "@/lib/firebase";
 import {
   EmailAuthProvider,
@@ -174,10 +182,76 @@ export default function SettingsPage() {
   // Export state
   const [isExporting, setIsExporting] = useState(false);
 
+  // Budget state
+  const [budgets, setBudgets] = useState<BudgetDoc[]>([]);
+  const [budgetCategory, setBudgetCategory] = useState("");
+  const [budgetAmount, setBudgetAmount] = useState("");
+  const [isSavingBudget, setIsSavingBudget] = useState(false);
+
   useEffect(() => {
     if (!user?.uid) return;
     getWallets(user.uid).then(setWallets).catch(console.error);
   }, [user?.uid]);
+
+  // Load budgets when budget sheet opens
+  useEffect(() => {
+    if (!showBudget || !user?.uid) return;
+    const now = new Date();
+    getBudgets(user.uid, now.getMonth() + 1, now.getFullYear())
+      .then(setBudgets)
+      .catch(console.error);
+  }, [showBudget, user?.uid]);
+
+  const handleSaveBudget = useCallback(async () => {
+    if (!user?.uid || !budgetCategory || !budgetAmount) return;
+    setIsSavingBudget(true);
+    try {
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+      const cat = ALL_CATEGORIES.find((c) => c.name === budgetCategory);
+      const existing = budgets.find((b) => b.categoryName === budgetCategory);
+
+      if (existing) {
+        await updateBudget(existing.id, { limit: parseFloat(budgetAmount) || 0 });
+      } else {
+        await createBudget({
+          userId: user.uid,
+          categoryName: budgetCategory,
+          categoryIcon: cat?.icon || "📦",
+          limit: parseFloat(budgetAmount) || 0,
+          spent: 0,
+          month,
+          year,
+          color: "",
+        });
+      }
+
+      const updated = await getBudgets(user.uid, month, year);
+      setBudgets(updated);
+      setBudgetCategory("");
+      setBudgetAmount("");
+      showToast("success", t.toast.budgetSaved);
+    } catch (err) {
+      console.error("Budget save error:", err);
+      showToast("error", t.toast.saveFailed);
+    } finally {
+      setIsSavingBudget(false);
+    }
+  }, [user?.uid, budgetCategory, budgetAmount, budgets, showToast, t]);
+
+  const handleDeleteBudget = useCallback(
+    async (id: string) => {
+      try {
+        await deleteBudget(id);
+        setBudgets((prev) => prev.filter((b) => b.id !== id));
+        showToast("success", t.toast.budgetDeleted);
+      } catch (err) {
+        console.error("Delete budget error:", err);
+      }
+    },
+    [showToast, t],
+  );
 
   const handleSignOut = useCallback(async () => {
     setIsSigningOut(true);
@@ -194,12 +268,34 @@ export default function SettingsPage() {
     }
   }, [signOut, router, showToast, t]);
 
-  const handleCurrencyChange = (code: string) => {
-    setSelectedCurrency(code);
-    localStorage.setItem("fintrack-currency", code);
-    showToast("success", t.toast.currencyChanged);
-    setShowCurrency(false);
-  };
+  const handleCurrencyChange = useCallback(
+    async (code: string) => {
+      const oldCurrency = selectedCurrency;
+      setSelectedCurrency(code);
+      localStorage.setItem("fintrack-currency", code);
+
+      // Convert all wallet balances
+      if (oldCurrency !== code && wallets.length > 0 && user?.uid) {
+        try {
+          for (const w of wallets) {
+            const newBalance = Math.round(
+              convertCurrency(w.balance || 0, oldCurrency, code),
+            );
+            await updateWallet(w.id, { balance: newBalance });
+          }
+          // Refresh wallets
+          const updated = await getWallets(user.uid);
+          setWallets(updated);
+        } catch (err) {
+          console.error("Currency conversion error:", err);
+        }
+      }
+
+      showToast("success", t.toast.currencyChanged);
+      setShowCurrency(false);
+    },
+    [selectedCurrency, wallets, user?.uid, showToast, t],
+  );
 
   const handleChangePassword = async () => {
     if (!newPw || newPw !== confirmPw) {
@@ -550,19 +646,105 @@ export default function SettingsPage() {
       {/* Monthly Budget */}
       <BottomSheet
         open={showBudget}
-        onClose={() => setShowBudget(false)}
+        onClose={() => {
+          setShowBudget(false);
+          setBudgetCategory("");
+          setBudgetAmount("");
+        }}
         title={t.settings.monthlyBudget}
       >
         <p className="text-xs text-muted-foreground mb-3">
           {t.settings.budgetDesc}
         </p>
-        <div className="flex flex-col items-center py-8 text-muted-foreground">
-          <span className="text-3xl mb-2">📊</span>
-          <p className="text-sm font-medium">{t.emptyState.noBudgets}</p>
-          <p className="text-xs text-muted-foreground/70 mt-1 text-center">
-            {t.emptyState.noBudgetsDesc}
-          </p>
+
+        {/* Add/Edit Budget Form */}
+        <div className="space-y-3 pb-3">
+          <div className="grid grid-cols-3 gap-2">
+            {ALL_CATEGORIES.filter((c) => c.type === "expense" || c.type === "both").map((c) => (
+              <button
+                key={c.name}
+                onClick={() => {
+                  setBudgetCategory(c.name);
+                  const existing = budgets.find(
+                    (b) => b.categoryName === c.name,
+                  );
+                  if (existing) setBudgetAmount(String(existing.limit));
+                  else setBudgetAmount("");
+                }}
+                className={cn(
+                  "flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-medium transition-all",
+                  budgetCategory === c.name
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
+                <span className="text-base">{c.icon}</span>
+                <span className="truncate max-w-full px-1">
+                  {t.categories[c.name as keyof typeof t.categories] || c.name}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {budgetCategory && (
+            <div className="flex gap-2">
+              <CurrencyInput
+                placeholder={t.settings.budgetAmount}
+                value={budgetAmount}
+                onChange={(v) => setBudgetAmount(v)}
+                className="h-10 flex-1 rounded-xl"
+              />
+              <Button
+                className="h-10 rounded-xl px-6"
+                onClick={handleSaveBudget}
+                disabled={isSavingBudget || !budgetAmount}
+              >
+                {isSavingBudget ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  t.general.save
+                )}
+              </Button>
+            </div>
+          )}
         </div>
+
+        {/* Existing budgets */}
+        {budgets.length > 0 ? (
+          <div className="space-y-2">
+            {budgets.map((b) => (
+              <div
+                key={b.id}
+                className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/50"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-base">{b.categoryIcon}</span>
+                  <div>
+                    <p className="text-sm font-medium">
+                      {t.categories[
+                        b.categoryName as keyof typeof t.categories
+                      ] || b.categoryName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Intl.NumberFormat().format(b.limit)}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDeleteBudget(b.id)}
+                  className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center py-4 text-muted-foreground">
+            <span className="text-2xl mb-1">📊</span>
+            <p className="text-xs">{t.emptyState.noBudgets}</p>
+          </div>
+        )}
       </BottomSheet>
 
       {/* Export Data */}

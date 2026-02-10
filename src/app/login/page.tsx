@@ -7,6 +7,8 @@ import { useDynamicIslandToast } from "@/components/ui/dynamic-island-toast";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { checkPasswordStrength, type PasswordCheck } from "@/lib/sanitize";
+import { fetchSignInMethodsForEmail } from "firebase/auth";
+import { getFirebaseAuth } from "@/lib/firebase";
 import { Input } from "@/components/ui/input";
 import {
   Eye,
@@ -79,6 +81,19 @@ export default function LoginPage() {
       showToast("success", t.toast.loginSuccess);
       router.push("/");
     } catch {
+      // Check if this email is linked to Google provider
+      try {
+        const fireAuth = getFirebaseAuth();
+        if (fireAuth) {
+          const methods = await fetchSignInMethodsForEmail(fireAuth, email);
+          if (methods.includes("google.com") && !methods.includes("password")) {
+            setError(t.login.useGoogleLogin);
+            showToast("error", t.login.useGoogleLogin);
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch {}
       setError(t.login.errorLogin);
       showToast("error", t.toast.loginFailed);
     } finally {

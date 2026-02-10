@@ -5,12 +5,14 @@ import { useLanguage } from "@/contexts/language-context";
 import { useAuth } from "@/contexts/auth-context";
 import { PageHeader } from "@/components/shared/page-header";
 import { SummaryCards } from "@/components/analytics/summary-cards";
-import { SpendingChart } from "@/components/analytics/spending-chart";
+import { BarChartComparison } from "@/components/analytics/bar-chart-comparison";
+import { SpendingRings } from "@/components/analytics/spending-rings";
 import { cn } from "@/lib/utils";
 import { BarChart3, Loader2 } from "lucide-react";
 import { getTransactions, type TransactionDoc } from "@/lib/firestore-service";
 
 type Period = "weekly" | "monthly" | "yearly";
+type FilterType = "all" | "income" | "expense";
 
 const CATEGORY_COLORS: Record<string, string> = {
   foodDrinks: "#ef4444",
@@ -31,6 +33,7 @@ export default function AnalyticsPage() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const [period, setPeriod] = useState<Period>("monthly");
+  const [filterType, setFilterType] = useState<FilterType>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [transactions, setTransactions] = useState<TransactionDoc[]>([]);
 
@@ -38,6 +41,12 @@ export default function AnalyticsPage() {
     { key: "weekly", label: t.analytics.weekly },
     { key: "monthly", label: t.analytics.monthly },
     { key: "yearly", label: t.analytics.yearly },
+  ];
+
+  const filterTypes: { key: FilterType; label: string }[] = [
+    { key: "all", label: t.analytics.all },
+    { key: "income", label: t.analytics.income },
+    { key: "expense", label: t.analytics.expense },
   ];
 
   useEffect(() => {
@@ -49,7 +58,7 @@ export default function AnalyticsPage() {
       .finally(() => setIsLoading(false));
   }, [user?.uid]);
 
-  // Auto-refresh when page gains focus (e.g. user switches back from another tab/page)
+  // Auto-refresh when page gains focus
   useEffect(() => {
     const handleFocus = () => {
       if (user?.uid) {
@@ -59,16 +68,18 @@ export default function AnalyticsPage() {
       }
     };
     window.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", () => {
+    const handleVisibility = () => {
       if (document.visibilityState === "visible") handleFocus();
-    });
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
     return () => {
       window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [user?.uid]);
 
   // Compute analytics data based on selected period
-  const { totalIncome, totalExpense, categoryData, totalSpending } =
+  const { totalIncome, totalExpense, categoryData, totalCategoryAmount } =
     useMemo(() => {
       const now = new Date();
       const month = now.getMonth() + 1;
@@ -102,9 +113,16 @@ export default function AnalyticsPage() {
         else if (tx.type === "expense") expense += tx.amount;
       }
 
-      // Category spending (all types for breakdown)
+      // BUG FIX: Filter category breakdown by filterType
+      // Only show categories matching the selected type
+      const typeForCategories =
+        filterType === "all" ? null : filterType;
+
       const catMap = new Map<string, { icon: string; amount: number }>();
       for (const tx of filtered) {
+        // Skip transactions that don't match the filter
+        if (typeForCategories && tx.type !== typeForCategories) continue;
+
         const key = tx.category || "others";
         const existing = catMap.get(key) || {
           icon: tx.categoryIcon || "📦",
@@ -134,9 +152,9 @@ export default function AnalyticsPage() {
         totalIncome: income,
         totalExpense: expense,
         categoryData: catData,
-        totalSpending: total,
+        totalCategoryAmount: total,
       };
-    }, [transactions, period]);
+    }, [transactions, period, filterType]);
 
   const hasData = totalIncome > 0 || totalExpense > 0;
 
@@ -183,15 +201,53 @@ export default function AnalyticsPage() {
           </div>
         ) : (
           <>
-            {/* Spending Chart by Category */}
+            {/* Income/Expense Filter Toggle */}
+            <div className="flex gap-2 p-1 bg-muted rounded-xl">
+              {filterTypes.map((ft) => (
+                <button
+                  key={ft.key}
+                  onClick={() => setFilterType(ft.key)}
+                  className={cn(
+                    "flex-1 py-2 text-xs font-medium rounded-lg transition-all",
+                    filterType === ft.key
+                      ? ft.key === "income"
+                        ? "bg-income text-white shadow-sm"
+                        : ft.key === "expense"
+                          ? "bg-expense text-white shadow-sm"
+                          : "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {ft.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Charts */}
             <div className="space-y-3">
-              <h2 className="text-base font-semibold">
-                {t.analytics.spendingByCategory}
-              </h2>
-              <SpendingChart
-                categories={categoryData}
-                totalSpending={totalSpending}
-              />
+              {filterType === "all" ? (
+                <>
+                  <h2 className="text-base font-semibold">
+                    {t.analytics.incomeVsExpense}
+                  </h2>
+                  <BarChartComparison
+                    totalIncome={totalIncome}
+                    totalExpense={totalExpense}
+                  />
+                </>
+              ) : (
+                <>
+                  <h2 className="text-base font-semibold">
+                    {filterType === "income"
+                      ? t.analytics.incomeByCategory
+                      : t.analytics.spendingByCategory}
+                  </h2>
+                  <SpendingRings
+                    categories={categoryData}
+                    totalSpending={totalCategoryAmount}
+                  />
+                </>
+              )}
             </div>
           </>
         )}

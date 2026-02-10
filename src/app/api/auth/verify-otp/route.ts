@@ -101,6 +101,7 @@ export async function POST(req: NextRequest) {
     try {
       userRecord = await auth.createUser({
         email: otpData.email,
+        emailVerified: true,
         password: password,
         displayName: otpData.name,
         phoneNumber: `+${sanitizedPhone.startsWith("0") ? "62" + sanitizedPhone.slice(1) : sanitizedPhone}`,

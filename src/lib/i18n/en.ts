@@ -73,6 +73,7 @@ export const en: Translations = {
   analytics: {
     title: 'Analytics',
     spendingByCategory: 'Spending by Category',
+    incomeByCategory: 'Income by Category',
     monthlyTrend: 'Monthly Trend',
     incomeVsExpense: 'Income vs Expense',
     topSpending: 'Top Spending',
@@ -84,6 +85,10 @@ export const en: Translations = {
     totalIncome: 'Total Income',
     totalExpense: 'Total Expense',
     netBalance: 'Net Balance',
+    income: 'Income',
+    expense: 'Expense',
+    net: 'Net',
+    all: 'All',
   },
 
   settings: {
@@ -128,6 +133,7 @@ export const en: Translations = {
     securityDesc: 'Manage your account security',
     exportDesc: 'Export all transaction data to a CSV file',
     budgetDesc: 'Set your monthly spending limits',
+    budgetAmount: 'Budget amount',
     categoriesDesc: 'Available transaction categories',
     changePassword: 'Change Password',
     currentPassword: 'Current password',
@@ -159,6 +165,7 @@ export const en: Translations = {
     registerHere: 'Register here',
     loginHere: 'Sign in here',
     errorLogin: 'Invalid email or password',
+    useGoogleLogin: 'This account is linked to Google. Please sign in with Google.',
     errorGoogle: 'Failed to sign in with Google',
     sendOtp: 'Send Verification Code',
     verifyTitle: 'Verify Phone Number',
@@ -282,6 +289,7 @@ export const en: Translations = {
     passwordTooShort: 'Password must be at least 6 characters',
     currencyChanged: 'Currency changed successfully',
     budgetSaved: 'Budget saved successfully',
+    budgetDeleted: 'Budget deleted successfully',
     telegramError: 'Failed to connect Telegram',
     telegramLinked: 'Telegram connected successfully',
     telegramUnlinked: 'Telegram disconnected successfully',

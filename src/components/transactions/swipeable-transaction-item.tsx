@@ -34,7 +34,7 @@ const TYPE_STYLES = {
 };
 
 const SWIPE_THRESHOLD = 40;
-const MAX_SWIPE = 108; // Width of both buttons combined
+const MAX_SWIPE = 144; // Width of both buttons combined (72px each)
 
 export function SwipeableTransactionItem({
   id,
@@ -144,32 +144,32 @@ export function SwipeableTransactionItem({
       className={cn("relative overflow-hidden rounded-2xl", className)}
     >
       {/* Action buttons behind */}
-      <div className="absolute right-0 top-0 bottom-0 flex items-center">
+      <div className="absolute right-0 top-0 bottom-0 flex items-stretch z-0">
         <button
           onClick={() => {
             closeSwipe();
             onEdit?.(id);
           }}
-          className="flex items-center justify-center w-[15vw] h-[94%] bg-primary text-primary-foreground gap-1 flex-col"
+          className="flex items-center justify-center w-[72px] bg-primary text-primary-foreground gap-1 flex-col"
         >
           <Pencil className="h-4 w-4" />
-          <span className="text-[10px] font-medium">{t.general.edit}</span>
+          <span className="text-[10px] font-medium leading-tight">{t.general.edit}</span>
         </button>
         <button
           onClick={() => {
             closeSwipe();
             onDelete?.(id);
           }}
-          className="flex items-center justify-center rounded-r-2xl w-[15vw] mr-1 h-[94%] bg-destructive text-white gap-1 flex-col"
+          className="flex items-center justify-center rounded-r-2xl w-[72px] bg-destructive text-white gap-1 flex-col"
         >
           <Trash2 className="h-4 w-4" />
-          <span className="text-[10px] font-medium">{t.general.delete}</span>
+          <span className="text-[10px] font-medium leading-tight">{t.general.delete}</span>
         </button>
       </div>
 
       {/* Foreground row */}
       <div
-        className="relative bg-card flex items-center gap-3 p-3 rounded-2xl border border-border/60 shadow-sm transition-transform duration-200 ease-out select-none touch-pan-y"
+        className="relative z-10 bg-card flex items-center gap-3 p-3 rounded-2xl border border-border/60 shadow-sm transition-transform duration-200 ease-out select-none touch-pan-y"
         style={{
           transform: `translateX(${offsetX}px)`,
           transition: isDragging ? "none" : undefined,

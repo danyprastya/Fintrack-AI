@@ -3,7 +3,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
-import { Button } from "@/components/ui/button";
 import { Camera, Upload, Loader2 } from "lucide-react";
 
 interface CameraViewProps {
@@ -126,48 +125,45 @@ export function CameraView({
         {t.scan.instruction}
       </p>
 
-      <div className="flex gap-3 w-full">
-        {hasCamera && (
-          <Button
-            onClick={capturePhoto}
-            disabled={isProcessing || !isCameraReady}
-            className="flex-1 h-12 rounded-xl text-base font-semibold"
-            size="lg"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                {t.scan.processing}
-              </>
-            ) : (
-              <>
-                <Camera className="mr-2 h-5 w-5" />
-                {t.scan.takePhoto}
-              </>
-            )}
-          </Button>
-        )}
-
-        <Button
-          variant="outline"
+      {/* Action buttons: upload (icon box) | capture (circle) */}
+      <div className="flex items-center justify-center gap-6 w-full">
+        {/* Upload button - icon only in a box */}
+        <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isProcessing}
-          className={cn("h-12 rounded-xl", !hasCamera && "flex-1")}
-          size="lg"
+          className="flex items-center justify-center h-12 w-12 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
         >
-          <Upload className="mr-2 h-5 w-5" />
-          {t.scan.uploadImage}
-        </Button>
+          <Upload className="h-5 w-5" />
+        </button>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={handleFileUpload}
-          className="hidden"
-        />
+        {/* Capture button - circular like camera apps */}
+        {hasCamera && (
+          <button
+            onClick={capturePhoto}
+            disabled={isProcessing || !isCameraReady}
+            className="relative flex items-center justify-center h-16 w-16 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {isProcessing ? (
+              <Loader2 className="h-7 w-7 animate-spin" />
+            ) : (
+              <Camera className="h-7 w-7" />
+            )}
+            {/* Outer ring */}
+            <span className="absolute inset-[-4px] rounded-full border-2 border-primary/40" />
+          </button>
+        )}
+
+        {/* Spacer to center the capture button */}
+        <div className="h-12 w-12" />
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
     </div>
   );
 }

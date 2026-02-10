@@ -73,6 +73,7 @@ export const id: Translations = {
   analytics: {
     title: 'Analitik',
     spendingByCategory: 'Pengeluaran per Kategori',
+    incomeByCategory: 'Pemasukan per Kategori',
     monthlyTrend: 'Tren Bulanan',
     incomeVsExpense: 'Pemasukan vs Pengeluaran',
     topSpending: 'Pengeluaran Terbesar',
@@ -84,6 +85,10 @@ export const id: Translations = {
     totalIncome: 'Total Pemasukan',
     totalExpense: 'Total Pengeluaran',
     netBalance: 'Saldo Bersih',
+    income: 'Pemasukan',
+    expense: 'Pengeluaran',
+    net: 'Selisih',
+    all: 'Semua',
   },
 
   settings: {
@@ -128,6 +133,7 @@ export const id: Translations = {
     securityDesc: 'Kelola keamanan akun Anda',
     exportDesc: 'Ekspor semua data transaksi ke file CSV',
     budgetDesc: 'Atur batas pengeluaran bulanan Anda',
+    budgetAmount: 'Jumlah anggaran',
     categoriesDesc: 'Daftar kategori transaksi yang tersedia',
     changePassword: 'Ubah Kata Sandi',
     currentPassword: 'Kata sandi saat ini',
@@ -159,6 +165,7 @@ export const id: Translations = {
     registerHere: 'Daftar di sini',
     loginHere: 'Masuk di sini',
     errorLogin: 'Email atau kata sandi salah',
+    useGoogleLogin: 'Akun ini terhubung ke Google. Silakan masuk menggunakan Google.',
     errorGoogle: 'Gagal masuk dengan Google',
     sendOtp: 'Kirim Kode Verifikasi',
     verifyTitle: 'Verifikasi Nomor HP',
@@ -282,6 +289,7 @@ export const id: Translations = {
     passwordTooShort: 'Kata sandi minimal 6 karakter',
     currencyChanged: 'Mata uang berhasil diubah',
     budgetSaved: 'Anggaran berhasil disimpan',
+    budgetDeleted: 'Anggaran berhasil dihapus',
     telegramError: 'Gagal menghubungkan Telegram',
     telegramLinked: 'Telegram berhasil dihubungkan',
     telegramUnlinked: 'Telegram berhasil diputus',

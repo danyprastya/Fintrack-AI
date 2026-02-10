@@ -243,6 +243,24 @@ export async function getBudgets(
   );
 }
 
+export async function createBudget(
+  data: Omit<BudgetDoc, "id">,
+): Promise<string> {
+  const docRef = await addDoc(collection(db(), "budgets"), data);
+  return docRef.id;
+}
+
+export async function updateBudget(
+  budgetId: string,
+  data: Partial<BudgetDoc>,
+): Promise<void> {
+  await updateDoc(doc(db(), "budgets", budgetId), data);
+}
+
+export async function deleteBudget(budgetId: string): Promise<void> {
+  await deleteDoc(doc(db(), "budgets", budgetId));
+}
+
 // ============================================================
 // AGGREGATION HELPERS (client-side)
 // ============================================================
