@@ -98,13 +98,10 @@ export default function TransactionsPage() {
         showToast("success", t.toast.transactionDeleted);
       } catch (err) {
         console.error("Delete error:", err);
-        showToast(
-          "error",
-          language === "id" ? "Gagal menghapus" : "Failed to delete",
-        );
+        showToast("error", t.toast.deleteFailed);
       }
     },
-    [showToast, language, t],
+    [showToast, t],
   );
 
   const handleAdd = useCallback(async () => {
@@ -135,10 +132,7 @@ export default function TransactionsPage() {
       await loadData();
     } catch (err) {
       console.error("Add error:", err);
-      showToast(
-        "error",
-        language === "id" ? "Gagal menambahkan" : "Failed to add",
-      );
+      showToast("error", t.toast.addFailed);
     } finally {
       setIsSaving(false);
     }
@@ -150,7 +144,6 @@ export default function TransactionsPage() {
     addCategory,
     addWalletId,
     showToast,
-    language,
     loadData,
     showNav,
     t,
@@ -235,7 +228,7 @@ export default function TransactionsPage() {
           <div className="w-full max-w-lg bg-background rounded-t-2xl p-5 space-y-4 animate-in slide-in-from-bottom">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold">
-                {language === "id" ? "Tambah Transaksi" : "Add Transaction"}
+                {t.transactions.addTransaction}
               </h3>
               <button
                 onClick={() => {
@@ -274,9 +267,7 @@ export default function TransactionsPage() {
             <Input
               type="number"
               inputMode="numeric"
-              placeholder={
-                language === "id" ? "Jumlah (contoh: 50000)" : "Amount"
-              }
+              placeholder={t.transactions.amountPlaceholder}
               value={addAmount}
               onChange={(e) => setAddAmount(e.target.value)}
               className="h-12 text-lg rounded-xl"
@@ -284,11 +275,7 @@ export default function TransactionsPage() {
 
             {/* Description */}
             <Input
-              placeholder={
-                language === "id"
-                  ? "Deskripsi (contoh: Makan siang)"
-                  : "Description"
-              }
+              placeholder={t.transactions.descriptionPlaceholder}
               value={addDesc}
               onChange={(e) => setAddDesc(e.target.value)}
               className="h-10 rounded-xl"
@@ -327,9 +314,7 @@ export default function TransactionsPage() {
                   onChange={(e) => setAddWalletId(e.target.value)}
                   className="w-full h-10 rounded-xl bg-muted px-3 text-sm"
                 >
-                  <option value="">
-                    {language === "id" ? "Pilih dompet" : "Select wallet"}
-                  </option>
+                  <option value="">{t.transactions.selectWallet}</option>
                   {wallets.map((w) => (
                     <option key={w.id} value={w.id}>
                       {w.icon} {w.name}
@@ -345,13 +330,7 @@ export default function TransactionsPage() {
               disabled={isSaving || !addAmount || !addDesc}
               onClick={handleAdd}
             >
-              {isSaving
-                ? language === "id"
-                  ? "Menyimpan..."
-                  : "Saving..."
-                : language === "id"
-                  ? "Simpan"
-                  : "Save"}
+              {isSaving ? t.general.saving : t.general.save}
             </Button>
           </div>
         </div>

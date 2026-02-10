@@ -67,7 +67,7 @@ interface CurrencyConverterWidgetProps {
 export function CurrencyConverterWidget({
   className,
 }: CurrencyConverterWidgetProps) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [fromCurrency, setFromCurrency] = useState("IDR");
   const [toCurrency, setToCurrency] = useState("USD");
@@ -89,7 +89,7 @@ export function CurrencyConverterWidget({
   }, [fromCurrency, toCurrency]);
 
   const currencies = Object.keys(CURRENCY_INFO);
-  const title = language === "id" ? "Konversi Mata Uang" : "Currency Converter";
+  const title = t.converter.title;
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -124,14 +124,14 @@ export function CurrencyConverterWidget({
       <div
         className={cn(
           "overflow-hidden transition-all duration-300 ease-in-out",
-          isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0",
+          isOpen ? "max-h-150 opacity-100" : "max-h-0 opacity-0",
         )}
       >
         <div className="rounded-2xl bg-card/60 dark:bg-card/40 backdrop-blur-sm shadow-sm p-4 space-y-3">
           {/* From */}
           <div className="space-y-1.5">
             <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {language === "id" ? "Dari" : "From"}
+              {t.converter.from}
             </label>
             <div className="flex items-center gap-2">
               <button
@@ -190,7 +190,7 @@ export function CurrencyConverterWidget({
           {/* To */}
           <div className="space-y-1.5">
             <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {language === "id" ? "Ke" : "To"}
+              {t.converter.to}
             </label>
             <div className="flex items-center gap-2">
               <button

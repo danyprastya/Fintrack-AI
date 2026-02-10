@@ -140,7 +140,7 @@ export default function ConverterPage() {
 
   const currencies = Object.keys(CURRENCY_INFO);
 
-  const title = language === "id" ? "Konversi Mata Uang" : "Currency Converter";
+  const title = t.converter.title;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -153,7 +153,7 @@ export default function ConverterPage() {
             {/* From section */}
             <div className="p-4 space-y-2">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                {language === "id" ? "Dari" : "From"}
+                {t.converter.from}
               </label>
               <div className="flex items-center gap-3">
                 <button
@@ -206,7 +206,7 @@ export default function ConverterPage() {
             {/* To section */}
             <div className="p-4 space-y-2">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                {language === "id" ? "Ke" : "To"}
+                {t.converter.to}
               </label>
               <div className="flex items-center gap-3">
                 <button
@@ -249,7 +249,7 @@ export default function ConverterPage() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs text-muted-foreground">
-                {language === "id" ? "Kurs saat ini" : "Current rate"}
+                {t.converter.currentRate}
               </p>
               <p className="text-sm font-semibold">
                 1 {fromCurrency} = {CURRENCY_INFO[toCurrency]?.symbol}{" "}
@@ -265,9 +265,7 @@ export default function ConverterPage() {
 
         {/* Popular Pairs */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold">
-            {language === "id" ? "Pasangan Populer" : "Popular Pairs"}
-          </h2>
+          <h2 className="text-sm font-semibold">{t.converter.popularPairs}</h2>
           <div className="grid grid-cols-2 gap-2">
             {POPULAR_PAIRS.map(([from, to]) => {
               const r = convert(1, from, to);

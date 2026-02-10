@@ -99,7 +99,7 @@ function BottomSheet({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[55] flex items-end justify-center bg-black/40">
+    <div className="fixed inset-0 z-55 flex items-end justify-center bg-black/40">
       <div className="w-full max-w-lg bg-background rounded-t-2xl p-5 space-y-4 animate-in slide-in-from-bottom max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold">{title}</h3>
@@ -139,7 +139,7 @@ const ALL_CATEGORIES = [
 ];
 
 export default function SettingsPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { profile, user, signOut } = useAuth();
   const { resolvedTheme, toggleTheme } = useTheme();
   const { unreadCount } = useNotifications();
@@ -187,15 +187,12 @@ export default function SettingsPage() {
       router.push("/login");
     } catch (err) {
       console.error("Sign out error:", err);
-      showToast(
-        "error",
-        language === "id" ? "Gagal keluar" : "Sign out failed",
-      );
+      showToast("error", t.toast.signOutFailed);
     } finally {
       setIsSigningOut(false);
       setShowSignOutConfirm(false);
     }
-  }, [signOut, router, showToast, language, t]);
+  }, [signOut, router, showToast, t]);
 
   const handleCurrencyChange = (code: string) => {
     setSelectedCurrency(code);
@@ -206,19 +203,11 @@ export default function SettingsPage() {
 
   const handleChangePassword = async () => {
     if (!newPw || newPw !== confirmPw) {
-      showToast(
-        "error",
-        language === "id" ? "Kata sandi tidak cocok" : "Passwords don't match",
-      );
+      showToast("error", t.toast.passwordMismatch);
       return;
     }
     if (newPw.length < 6) {
-      showToast(
-        "error",
-        language === "id"
-          ? "Kata sandi minimal 6 karakter"
-          : "Password must be at least 6 characters",
-      );
+      showToast("error", t.toast.passwordTooShort);
       return;
     }
 
@@ -253,10 +242,7 @@ export default function SettingsPage() {
     try {
       const txs = await getTransactions(user.uid, 10000);
       if (txs.length === 0) {
-        showToast(
-          "error",
-          language === "id" ? "Tidak ada data" : "No data to export",
-        );
+        showToast("error", t.toast.noDataExport);
         setIsExporting(false);
         return;
       }
@@ -282,10 +268,7 @@ export default function SettingsPage() {
       setShowExport(false);
     } catch (err) {
       console.error("Export error:", err);
-      showToast(
-        "error",
-        language === "id" ? "Gagal mengekspor" : "Export failed",
-      );
+      showToast("error", t.toast.exportFailed);
     } finally {
       setIsExporting(false);
     }
@@ -314,7 +297,7 @@ export default function SettingsPage() {
 
       <div className="flex-1 p-4 space-y-6 pb-24">
         {/* Profile */}
-        <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/10">
+        <div className="flex items-center gap-4 p-4 rounded-2xl bg-linear-to-r from-primary/5 to-primary/10 border border-primary/10">
           <Avatar className="h-14 w-14 border-2 border-primary/20">
             {profile?.photoURL ? (
               <AvatarImage src={profile.photoURL} alt={userName} />
@@ -601,13 +584,7 @@ export default function SettingsPage() {
           ) : (
             <Download className="h-4 w-4 mr-2" />
           )}
-          {isExporting
-            ? language === "id"
-              ? "Mengekspor..."
-              : "Exporting..."
-            : language === "id"
-              ? "Unduh CSV"
-              : "Download CSV"}
+          {isExporting ? t.settings.exporting : t.settings.downloadCsv}
         </Button>
       </BottomSheet>
 
@@ -669,11 +646,7 @@ export default function SettingsPage() {
         ) : (
           <div className="flex flex-col items-center py-6 text-muted-foreground">
             <Shield className="h-8 w-8 mb-2 text-muted-foreground/60" />
-            <p className="text-sm text-center">
-              {language === "id"
-                ? "Anda masuk menggunakan Google. Kata sandi dikelola oleh Google."
-                : "You're signed in with Google. Password is managed by Google."}
-            </p>
+            <p className="text-sm text-center">{t.settings.googleAuthInfo}</p>
           </div>
         )}
       </BottomSheet>

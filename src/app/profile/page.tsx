@@ -15,7 +15,7 @@ import { Camera, LogOut, Loader2, Save, Trash2 } from "lucide-react";
 
 export default function ProfilePage() {
   const { profile, signOut, updateUserProfile, isAuthenticated } = useAuth();
-  const { language, t: globalT } = useLanguage();
+  const { language, t } = useLanguage();
   const { showToast } = useDynamicIslandToast();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -30,44 +30,6 @@ export default function ProfilePage() {
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [cropFile, setCropFile] = useState<File | null>(null);
 
-  const t = {
-    id: {
-      title: "Profil",
-      name: "Nama",
-      email: "Email",
-      save: "Simpan Perubahan",
-      saved: "Tersimpan!",
-      signOut: "Keluar",
-      signOutConfirm: "Yakin ingin keluar?",
-      joined: "Bergabung sejak",
-      photoHint: "Ketuk untuk ganti foto",
-      deletePhoto: "Hapus Foto",
-      uploading: "Mengunggah...",
-      photoMaxSize: "JPG, PNG, WebP",
-      photoSuccess: "Foto berhasil diperbarui!",
-      photoDeleted: "Foto berhasil dihapus",
-      photoError: "Gagal mengunggah foto",
-    },
-    en: {
-      title: "Profile",
-      name: "Name",
-      email: "Email",
-      save: "Save Changes",
-      saved: "Saved!",
-      signOut: "Sign Out",
-      signOutConfirm: "Are you sure you want to sign out?",
-      joined: "Joined since",
-      photoHint: "Tap to change photo",
-      deletePhoto: "Delete Photo",
-      uploading: "Uploading...",
-      photoMaxSize: "JPG, PNG, WebP",
-      photoSuccess: "Photo updated successfully!",
-      photoDeleted: "Photo deleted successfully",
-      photoError: "Failed to upload photo",
-    },
-  };
-
-  const l = t[language];
   const initials = (profile?.displayName || "U").charAt(0).toUpperCase();
   const currentPhotoURL = photoPreview || profile?.photoURL;
 
@@ -137,11 +99,11 @@ export default function ProfilePage() {
       // Update local auth state
       await updateUserProfile({ photoURL });
       setPhotoPreview(null); // Clear preview, real URL is now in profile
-      showToast("success", globalT.toast.photoUpdated);
+      showToast("success", t.toast.photoUpdated);
     } catch (err) {
       console.error("Avatar upload failed:", err);
       setPhotoPreview(null); // Revert preview
-      showToast("error", globalT.toast.photoFailed);
+      showToast("error", t.toast.photoFailed);
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -170,12 +132,10 @@ export default function ProfilePage() {
       // Update local auth state
       await updateUserProfile({ photoURL: "" });
       setPhotoPreview(null);
-      showToast("success", globalT.toast.photoDeleted);
+      showToast("success", t.toast.photoDeleted);
     } catch (err) {
       console.error("Avatar delete failed:", err);
-      setPhotoError(
-        language === "id" ? "Gagal menghapus foto" : "Failed to delete photo",
-      );
+      setPhotoError(t.profile.deletePhotoFailed);
     } finally {
       setIsDeletingPhoto(false);
     }
@@ -186,12 +146,9 @@ export default function ProfilePage() {
     setIsSaving(true);
     try {
       await updateUserProfile({ displayName: displayName.trim() });
-      showToast("success", globalT.toast.nameSaved);
+      showToast("success", t.toast.nameSaved);
     } catch {
-      showToast(
-        "error",
-        language === "id" ? "Gagal menyimpan" : "Failed to save",
-      );
+      showToast("error", t.profile.saveFailed);
     } finally {
       setIsSaving(false);
     }
@@ -201,13 +158,10 @@ export default function ProfilePage() {
     setIsSigningOut(true);
     try {
       await signOut();
-      showToast("success", globalT.toast.signOutSuccess);
+      showToast("success", t.toast.signOutSuccess);
       router.push("/login");
     } catch {
-      showToast(
-        "error",
-        language === "id" ? "Gagal keluar" : "Sign out failed",
-      );
+      showToast("error", t.profile.signOutFailed);
       setIsSigningOut(false);
     }
   };
@@ -219,7 +173,7 @@ export default function ProfilePage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <PageHeader title={l.title} showBack />
+      <PageHeader title={t.profile.title} showBack />
 
       <div className="flex-1 p-4 space-y-6">
         {/* Avatar */}
@@ -270,10 +224,10 @@ export default function ProfilePage() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            {isUploadingPhoto ? l.uploading : l.photoHint}
+            {isUploadingPhoto ? t.profile.uploading : t.profile.photoHint}
           </p>
           <p className="text-[10px] text-muted-foreground/60">
-            {l.photoMaxSize}
+            {t.profile.photoMaxSize}
           </p>
 
           {/* Photo error message */}
@@ -293,7 +247,7 @@ export default function ProfilePage() {
               ) : (
                 <Trash2 className="h-3 w-3" />
               )}
-              {l.deletePhoto}
+              {t.profile.deletePhoto}
             </button>
           )}
         </div>
@@ -302,7 +256,7 @@ export default function ProfilePage() {
         <div className="space-y-4">
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              {l.name}
+              {t.profile.name}
             </label>
             <Input
               type="text"
@@ -315,7 +269,7 @@ export default function ProfilePage() {
 
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              {l.email}
+              {t.profile.email}
             </label>
             <Input
               type="email"
@@ -339,7 +293,7 @@ export default function ProfilePage() {
           ) : (
             <>
               <Save className="h-4 w-4" />
-              {l.save}
+              {t.profile.save}
             </>
           )}
         </button>
@@ -355,7 +309,7 @@ export default function ProfilePage() {
           ) : (
             <>
               <LogOut className="h-4 w-4" />
-              {l.signOut}
+              {t.profile.signOut}
             </>
           )}
         </button>
@@ -364,10 +318,10 @@ export default function ProfilePage() {
       {/* Sign Out Confirmation */}
       <ConfirmationDialog
         open={showSignOutConfirm}
-        title={globalT.settings.signOutTitle}
-        message={globalT.settings.signOutConfirm}
-        confirmLabel={l.signOut}
-        cancelLabel={globalT.settings.cancel}
+        title={t.settings.signOutTitle}
+        message={t.settings.signOutConfirm}
+        confirmLabel={t.profile.signOut}
+        cancelLabel={t.settings.cancel}
         onConfirm={handleSignOut}
         onCancel={() => setShowSignOutConfirm(false)}
         danger

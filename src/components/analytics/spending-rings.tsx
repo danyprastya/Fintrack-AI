@@ -150,7 +150,7 @@ export function SpendingRings({
     <div className={cn("space-y-5", className)}>
       {/* Rings + Total center */}
       <div className="flex items-center justify-center gap-6">
-        <div className="relative w-[170px] h-[170px] shrink-0">
+        <div className="relative w-42.5 h-42.5 shrink-0">
           {rings.map((ring, index) => (
             <CircleProgress key={index} data={ring} index={index} />
           ))}

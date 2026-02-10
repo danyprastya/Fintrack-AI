@@ -136,7 +136,7 @@ function normalizeAccountName(name: string): string {
   return mapping[name.toLowerCase()] || name;
 }
 
-function buildDescription(original: string, amount: number): string {
+function buildDescription(original: string, _amount: number): string {
   // Remove amount patterns and account references
   let desc = original
     .replace(/\d+(?:[.,]\d{3})*\s*(?:jt|juta|rb|ribu|m|mil|k)?/gi, '')

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/language-context";
 import { useAuth } from "@/contexts/auth-context";
 import { useNotifications } from "@/contexts/notification-context";
-import { useRouter } from "next/navigation";
 import { BalanceCard } from "@/components/dashboard/balance-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
@@ -21,16 +20,13 @@ import {
   getBudgets,
   computeTotalBalance,
   computeMonthlyTotals,
-  type WalletDoc,
-  type TransactionDoc,
   type BudgetDoc,
 } from "@/lib/firestore-service";
 
 export default function DashboardPage() {
   const { t } = useLanguage();
-  const { user, profile, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, profile, isLoading: authLoading } = useAuth();
   const { unreadCount } = useNotifications();
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
 
   // Real data from Firestore
@@ -165,7 +161,7 @@ export default function DashboardPage() {
                 alt="FinTrack AI"
                 width={18}
                 height={18}
-                className="h-[18px] w-[18px]"
+                className="h-4.5 w-4.5"
               />
               <span className="text-sm font-bold text-foreground">
                 FinTrack AI

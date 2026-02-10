@@ -7,7 +7,6 @@
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
   addDoc,
   updateDoc,
@@ -18,7 +17,6 @@ import {
   limit,
   Timestamp,
   runTransaction,
-  writeBatch,
   QueryConstraint,
   Firestore,
 } from "firebase/firestore";
@@ -32,16 +30,6 @@ function db(): Firestore {
   const firestore = getFirebaseDb();
   if (!firestore) throw new Error("Firestore not initialized");
   return firestore;
-}
-
-async function getDocument<T>(
-  collectionName: string,
-  docId: string,
-): Promise<T | null> {
-  const docRef = doc(db(), collectionName, docId);
-  const snapshot = await getDoc(docRef);
-  if (!snapshot.exists()) return null;
-  return { id: snapshot.id, ...snapshot.data() } as T;
 }
 
 async function queryDocuments<T>(

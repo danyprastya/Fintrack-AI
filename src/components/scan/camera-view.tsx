@@ -4,7 +4,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
 import { Button } from "@/components/ui/button";
-import { Camera, Upload, X, Loader2 } from "lucide-react";
+import { Camera, Upload, Loader2 } from "lucide-react";
 
 interface CameraViewProps {
   onCapture: (image: Blob) => void;
@@ -95,7 +95,7 @@ export function CameraView({
   return (
     <div className={cn("flex flex-col items-center gap-4", className)}>
       {hasCamera ? (
-        <div className="relative w-full aspect-[3/4] bg-black rounded-2xl overflow-hidden">
+        <div className="relative w-full aspect-3/4 bg-black rounded-2xl overflow-hidden">
           <video
             ref={videoRef}
             autoPlay
@@ -114,7 +114,7 @@ export function CameraView({
           </div>
         </div>
       ) : (
-        <div className="w-full aspect-[3/4] bg-muted rounded-2xl flex flex-col items-center justify-center gap-3 text-muted-foreground">
+        <div className="w-full aspect-3/4 bg-muted rounded-2xl flex flex-col items-center justify-center gap-3 text-muted-foreground">
           <Camera className="h-12 w-12" />
           <p className="text-sm font-medium">{t.scan.noCamera}</p>
         </div>

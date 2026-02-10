@@ -59,12 +59,14 @@ export function SwipeableTransactionItem({
   const [offsetX, setOffsetX] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
   const isDraggingRef = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       startXRef.current = e.touches[0].clientX;
       currentXRef.current = isRevealed ? -MAX_SWIPE : 0;
       isDraggingRef.current = true;
+      setIsDragging(true);
     },
     [isRevealed],
   );
@@ -81,6 +83,7 @@ export function SwipeableTransactionItem({
 
   const handleTouchEnd = useCallback(() => {
     isDraggingRef.current = false;
+    setIsDragging(false);
     if (offsetX < -SWIPE_THRESHOLD) {
       setOffsetX(-MAX_SWIPE);
       setIsRevealed(true);
@@ -96,6 +99,7 @@ export function SwipeableTransactionItem({
       startXRef.current = e.clientX;
       currentXRef.current = isRevealed ? -MAX_SWIPE : 0;
       isDraggingRef.current = true;
+      setIsDragging(true);
 
       const handleMouseMove = (ev: MouseEvent) => {
         if (!isDraggingRef.current) return;
@@ -109,6 +113,7 @@ export function SwipeableTransactionItem({
 
       const handleMouseUp = () => {
         isDraggingRef.current = false;
+        setIsDragging(false);
         setOffsetX((prev) => {
           if (prev < -SWIPE_THRESHOLD) {
             setIsRevealed(true);
@@ -167,7 +172,7 @@ export function SwipeableTransactionItem({
         className="relative bg-card flex items-center gap-3 p-3 rounded-2xl border border-border/60 shadow-sm transition-transform duration-200 ease-out select-none touch-pan-y"
         style={{
           transform: `translateX(${offsetX}px)`,
-          transition: isDraggingRef.current ? "none" : undefined,
+          transition: isDragging ? "none" : undefined,
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

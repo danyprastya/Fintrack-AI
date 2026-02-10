@@ -7,8 +7,7 @@ import { useDynamicIslandToast } from "@/components/ui/dynamic-island-toast";
 import { PageHeader } from "@/components/shared/page-header";
 import { CameraView } from "@/components/scan/camera-view";
 import { OCRResult } from "@/components/scan/ocr-result";
-import { recognizeText, terminateOCR } from "@/services/ocr/engine";
-import { parseReceiptText, categorizeMerchant } from "@/services/ocr/parser";
+import { categorizeMerchant } from "@/services/ocr/parser";
 import { Loader2 } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
 import {
@@ -26,12 +25,11 @@ interface ScanResult {
 }
 
 export default function ScanPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { showToast } = useDynamicIslandToast();
   const [state, setState] = useState<ScanState>("camera");
   const [result, setResult] = useState<ScanResult | null>(null);
-  const [progress, setProgress] = useState(0);
   const [wallets, setWallets] = useState<WalletDoc[]>([]);
 
   useEffect(() => {
@@ -41,16 +39,27 @@ export default function ScanPage() {
 
   const processImage = useCallback(async (image: Blob | File) => {
     setState("processing");
-    setProgress(0);
 
     try {
-      const ocrResult = await recognizeText(image);
-      const parsed = parseReceiptText(ocrResult.text);
+      // Send image to server-side Gemini Flash OCR API
+      const formData = new FormData();
+      formData.append("image", image);
+
+      const res = await fetch("/api/ocr/recognize", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("OCR API error");
+      }
+
+      const data = await res.json();
 
       setResult({
-        total: parsed.total,
-        date: parsed.date?.toISOString().split("T")[0] || null,
-        merchant: parsed.merchant,
+        total: data.total,
+        date: data.date || null,
+        merchant: data.merchant || null,
       });
       setState("result");
     } catch (error) {
@@ -88,8 +97,7 @@ export default function ScanPage() {
           userId: user.uid,
           type: "expense",
           amount: data.total,
-          description:
-            data.merchant || (language === "id" ? "Struk OCR" : "OCR Receipt"),
+          description: data.merchant || t.scan.ocrDefaultDesc,
           category: categoryName,
           categoryIcon: CATEGORY_ICONS[categoryName] || "📦",
           walletId: wallets.length > 0 ? wallets[0].id : undefined,
@@ -97,24 +105,16 @@ export default function ScanPage() {
           source: "ocr",
         });
 
-        showToast(
-          "success",
-          language === "id"
-            ? "Transaksi dari struk disimpan"
-            : "Receipt transaction saved",
-        );
+        showToast("success", t.toast.ocrSaved);
       } catch (err) {
         console.error("Save receipt error:", err);
-        showToast(
-          "error",
-          language === "id" ? "Gagal menyimpan" : "Failed to save",
-        );
+        showToast("error", t.toast.ocrFailed);
       }
 
       setState("camera");
       setResult(null);
     },
-    [user?.uid, wallets, showToast, language],
+    [user?.uid, wallets, showToast, t],
   );
 
   const handleRetry = useCallback(() => {
@@ -145,7 +145,7 @@ export default function ScanPage() {
             <div className="text-center">
               <p className="text-base font-semibold">{t.scan.processing}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                AI-OCR Tesseract.js
+                Gemini Flash AI
               </p>
             </div>
           </div>

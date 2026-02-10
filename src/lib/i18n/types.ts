@@ -49,6 +49,9 @@ export interface Translations {
     noTransactions: string;
     deleteConfirm: string;
     addTransaction: string;
+    amountPlaceholder: string;
+    descriptionPlaceholder: string;
+    selectWallet: string;
   };
 
   // Scanner
@@ -68,6 +71,7 @@ export interface Translations {
     noCamera: string;
     scanFailed: string;
     uploadImage: string;
+    ocrDefaultDesc: string;
   };
 
   // Analytics
@@ -138,6 +142,107 @@ export interface Translations {
     selectCurrency: string;
     depositTo: string;
     payFrom: string;
+    walletNamePlaceholder: string;
+    initialBalance: string;
+    exporting: string;
+    downloadCsv: string;
+    googleAuthInfo: string;
+  };
+
+  // Login / Auth
+  login: {
+    subtitle: string;
+    login: string;
+    register: string;
+    name: string;
+    email: string;
+    password: string;
+    phone: string;
+    phonePlaceholder: string;
+    orWith: string;
+    google: string;
+    noAccount: string;
+    hasAccount: string;
+    registerHere: string;
+    loginHere: string;
+    errorLogin: string;
+    errorGoogle: string;
+    sendOtp: string;
+    verifyTitle: string;
+    verifySub: string;
+    verify: string;
+    resend: string;
+    resendIn: string;
+    back: string;
+    pwMin: string;
+    pwUpper: string;
+    pwLower: string;
+    pwNumber: string;
+    pwSpecial: string;
+    pwStrength: string;
+    secureInfo: string;
+    devOtpLabel: string;
+    verifyFailed: string;
+    resendFailed: string;
+  };
+
+  // Profile
+  profile: {
+    title: string;
+    name: string;
+    email: string;
+    save: string;
+    saved: string;
+    signOut: string;
+    signOutConfirm: string;
+    joined: string;
+    photoHint: string;
+    deletePhoto: string;
+    uploading: string;
+    photoMaxSize: string;
+    photoSuccess: string;
+    photoDeleted: string;
+    photoError: string;
+    deletePhotoFailed: string;
+    saveFailed: string;
+    signOutFailed: string;
+  };
+
+  // Telegram Link
+  telegram: {
+    title: string;
+    desc: string;
+    generate: string;
+    regenerate: string;
+    linked: string;
+    linkedAs: string;
+    unlink: string;
+    copied: string;
+    copy: string;
+    expires: string;
+    sec: string;
+    step1: string;
+    step2: string;
+    step3: string;
+    unlinkConfirm: string;
+    error: string;
+  };
+
+  // Photo Crop
+  photoCrop: {
+    title: string;
+    hint: string;
+    cancel: string;
+    confirm: string;
+  };
+
+  // Converter
+  converter: {
+    title: string;
+    from: string;
+    to: string;
+    currentRate: string;
+    popularPairs: string;
   };
 
   // Notifications page
@@ -178,13 +283,17 @@ export interface Translations {
     unauthorized: string;
     googleNotEnabled: string;
     signOutSuccess: string;
+    signOutFailed: string;
     transactionAdded: string;
     transactionDeleted: string;
     walletAdded: string;
     walletDeleted: string;
+    walletAddFailed: string;
     dataExported: string;
     passwordChanged: string;
     passwordFailed: string;
+    passwordMismatch: string;
+    passwordTooShort: string;
     currencyChanged: string;
     budgetSaved: string;
     telegramError: string;
@@ -194,6 +303,11 @@ export interface Translations {
     ocrSaved: string;
     ocrFailed: string;
     nameSaved: string;
+    deleteFailed: string;
+    addFailed: string;
+    saveFailed: string;
+    exportFailed: string;
+    noDataExport: string;
   };
 
   // Categories
@@ -219,6 +333,7 @@ export interface Translations {
     delete: string;
     edit: string;
     loading: string;
+    saving: string;
     error: string;
     noData: string;
     retry: string;

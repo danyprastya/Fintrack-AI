@@ -16,7 +16,7 @@ import {
 
 export function TelegramLinkSection() {
   const { user } = useAuth();
-  const { language } = useLanguage();
+  const { t } = useLanguage();
   const { showToast } = useDynamicIslandToast();
 
   const [code, setCode] = useState<string | null>(null);
@@ -26,46 +26,6 @@ export function TelegramLinkSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
-
-  const t = {
-    id: {
-      title: "Hubungkan Telegram",
-      desc: "Catat transaksi langsung dari Telegram Bot",
-      generate: "Buat Kode",
-      regenerate: "Buat Ulang",
-      linked: "Terhubung",
-      linkedAs: "Terhubung sebagai",
-      unlink: "Putuskan",
-      copied: "Tersalin!",
-      copy: "Salin",
-      expires: "Berlaku",
-      sec: "detik",
-      step1: "Buka bot Telegram:",
-      step2: "Kirim perintah:",
-      step3: "Mulai catat transaksi!",
-      unlinkConfirm: "Telegram berhasil diputus.",
-      error: "Gagal. Coba lagi.",
-    },
-    en: {
-      title: "Link Telegram",
-      desc: "Record transactions directly from Telegram Bot",
-      generate: "Generate Code",
-      regenerate: "Regenerate",
-      linked: "Connected",
-      linkedAs: "Connected as",
-      unlink: "Unlink",
-      copied: "Copied!",
-      copy: "Copy",
-      expires: "Valid for",
-      sec: "seconds",
-      step1: "Open Telegram bot:",
-      step2: "Send command:",
-      step3: "Start recording transactions!",
-      unlinkConfirm: "Telegram unlinked successfully.",
-      error: "Failed. Try again.",
-    },
-  };
-  const l = t[language];
 
   // Countdown timer
   useEffect(() => {
@@ -97,8 +57,8 @@ export function TelegramLinkSection() {
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || l.error);
-        showToast("error", data.error || l.error);
+        setError(data.error || t.telegram.error);
+        showToast("error", data.error || t.telegram.error);
         return;
       }
 
@@ -107,12 +67,12 @@ export function TelegramLinkSection() {
       setIsLinked(data.isAlreadyLinked);
       setLinkedUsername(data.linkedUsername);
     } catch {
-      setError(l.error);
-      showToast("error", l.error);
+      setError(t.telegram.error);
+      showToast("error", t.telegram.error);
     } finally {
       setIsLoading(false);
     }
-  }, [user, l.error]);
+  }, [user, t.telegram.error, showToast]);
 
   const handleUnlink = useCallback(async () => {
     if (!user) return;
@@ -126,29 +86,29 @@ export function TelegramLinkSection() {
       setIsLinked(false);
       setLinkedUsername(null);
       setCode(null);
-      showToast("success", l.unlinkConfirm);
+      showToast("success", t.telegram.unlinkConfirm);
     } catch {
-      setError(l.error);
-      showToast("error", l.error);
+      setError(t.telegram.error);
+      showToast("error", t.telegram.error);
     } finally {
       setIsLoading(false);
     }
-  }, [user, l.error]);
+  }, [user, t.telegram.error, t.telegram.unlinkConfirm, showToast]);
 
   const copyCode = useCallback(() => {
     if (!code) return;
     navigator.clipboard.writeText(`/link ${code}`);
     setCopied(true);
-    showToast("success", l.copied);
+    showToast("success", t.telegram.copied);
     setTimeout(() => setCopied(false), 2000);
-  }, [code, showToast, l.copied]);
+  }, [code, showToast, t.telegram.copied]);
 
   const botName = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "YourBot";
 
   return (
     <div className="space-y-3">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-        {l.title}
+        {t.telegram.title}
       </p>
 
       <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
@@ -158,13 +118,13 @@ export function TelegramLinkSection() {
             <MessageCircle className="h-5 w-5 text-[#0088cc]" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-semibold">{l.title}</p>
-            <p className="text-xs text-muted-foreground">{l.desc}</p>
+            <p className="text-sm font-semibold">{t.telegram.title}</p>
+            <p className="text-xs text-muted-foreground">{t.telegram.desc}</p>
           </div>
           {isLinked && (
             <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
               <CheckCircle2 className="h-3 w-3" />
-              {l.linked}
+              {t.telegram.linked}
             </span>
           )}
         </div>
@@ -173,7 +133,7 @@ export function TelegramLinkSection() {
         {isLinked && linkedUsername && (
           <div className="flex items-center justify-between bg-muted/50 rounded-xl p-3">
             <p className="text-xs text-muted-foreground">
-              {l.linkedAs}{" "}
+              {t.telegram.linkedAs}{" "}
               <span className="font-medium text-foreground">
                 @{linkedUsername}
               </span>
@@ -184,7 +144,7 @@ export function TelegramLinkSection() {
               className="flex items-center gap-1 text-xs text-destructive hover:underline disabled:opacity-50"
             >
               <Link2Off className="h-3 w-3" />
-              {l.unlink}
+              {t.telegram.unlink}
             </button>
           </div>
         )}
@@ -216,7 +176,7 @@ export function TelegramLinkSection() {
 
             {/* Timer */}
             <p className="text-xs text-center text-muted-foreground">
-              {l.expires}{" "}
+              {t.telegram.expires}{" "}
               <span className="font-medium text-foreground">
                 {Math.floor(expiresIn / 60)}:
                 {String(expiresIn % 60).padStart(2, "0")}
@@ -227,7 +187,7 @@ export function TelegramLinkSection() {
             <div className="bg-muted/30 rounded-xl p-3 space-y-2">
               <p className="text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">1.</span>{" "}
-                {l.step1}{" "}
+                {t.telegram.step1}{" "}
                 <a
                   href={`https://t.me/${botName}`}
                   target="_blank"
@@ -239,14 +199,14 @@ export function TelegramLinkSection() {
               </p>
               <p className="text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">2.</span>{" "}
-                {l.step2}{" "}
+                {t.telegram.step2}{" "}
                 <code className="bg-muted px-1.5 py-0.5 rounded text-[11px] font-mono font-medium">
                   /link {code}
                 </code>
               </p>
               <p className="text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">3.</span>{" "}
-                {l.step3} 🎉
+                {t.telegram.step3} 🎉
               </p>
             </div>
           </div>
@@ -273,10 +233,10 @@ export function TelegramLinkSection() {
             ) : code ? (
               <>
                 <RefreshCw className="h-3.5 w-3.5" />
-                {l.regenerate}
+                {t.telegram.regenerate}
               </>
             ) : (
-              l.generate
+              t.telegram.generate
             )}
           </button>
         )}

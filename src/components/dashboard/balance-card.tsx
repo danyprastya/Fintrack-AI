@@ -29,7 +29,7 @@ export function BalanceCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/85 p-5 text-primary-foreground",
+        "relative overflow-hidden rounded-2xl bg-linear-to-br from-primary to-primary/85 p-5 text-primary-foreground",
         "shadow-xl shadow-primary/15",
         "before:absolute before:inset-0 before:bg-white/10 before:backdrop-blur-sm before:rounded-2xl",
         className,

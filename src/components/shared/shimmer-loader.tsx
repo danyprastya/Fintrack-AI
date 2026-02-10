@@ -48,7 +48,7 @@ export function ShimmerBalanceCard({ className }: ShimmerProps) {
   return (
     <div
       className={cn(
-        "rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 p-5 space-y-4",
+        "rounded-2xl bg-linear-to-br from-primary/10 to-primary/5 p-5 space-y-4",
         className,
       )}
     >

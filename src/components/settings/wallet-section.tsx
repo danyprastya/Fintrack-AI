@@ -45,7 +45,7 @@ export function WalletSection({
   className,
   onRefresh,
 }: WalletSectionProps) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { showToast } = useDynamicIslandToast();
   const [showForm, setShowForm] = useState(false);
@@ -75,17 +75,14 @@ export function WalletSection({
         balance: parseFloat(balance) || 0,
         icon,
       });
-      showToast(
-        "success",
-        language === "id" ? "Dompet ditambahkan" : "Wallet added",
-      );
+      showToast("success", t.toast.walletAdded);
       setShowForm(false);
       setName("");
       setBalance("");
       onRefresh?.();
     } catch (err) {
       console.error("Add wallet error:", err);
-      showToast("error", language === "id" ? "Gagal menambahkan" : "Failed");
+      showToast("error", t.toast.walletAddFailed);
     } finally {
       setIsSaving(false);
     }
@@ -94,10 +91,7 @@ export function WalletSection({
   const handleDelete = async (id: string) => {
     try {
       await deleteWallet(id);
-      showToast(
-        "success",
-        language === "id" ? "Dompet dihapus" : "Wallet deleted",
-      );
+      showToast("success", t.toast.walletDeleted);
       onRefresh?.();
     } catch (err) {
       console.error("Delete wallet error:", err);
@@ -122,11 +116,7 @@ export function WalletSection({
           ) : (
             <Plus className="h-3.5 w-3.5 mr-1" />
           )}
-          {showForm
-            ? language === "id"
-              ? "Batal"
-              : "Cancel"
-            : t.settings.addWallet}
+          {showForm ? t.general.cancel : t.settings.addWallet}
         </Button>
       </div>
 
@@ -135,7 +125,7 @@ export function WalletSection({
         <Card className="border">
           <CardContent className="p-3 space-y-3">
             <Input
-              placeholder={language === "id" ? "Nama dompet" : "Wallet name"}
+              placeholder={t.settings.walletNamePlaceholder}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="h-9 text-sm rounded-lg"
@@ -159,7 +149,7 @@ export function WalletSection({
             <Input
               type="number"
               inputMode="numeric"
-              placeholder={language === "id" ? "Saldo awal" : "Initial balance"}
+              placeholder={t.settings.initialBalance}
               value={balance}
               onChange={(e) => setBalance(e.target.value)}
               className="h-9 text-sm rounded-lg"
@@ -169,13 +159,7 @@ export function WalletSection({
               disabled={isSaving || !name.trim()}
               onClick={handleAdd}
             >
-              {isSaving
-                ? language === "id"
-                  ? "Menyimpan..."
-                  : "Saving..."
-                : language === "id"
-                  ? "Simpan"
-                  : "Save"}
+              {isSaving ? t.general.saving : t.general.save}
             </Button>
           </CardContent>
         </Card>
@@ -195,7 +179,7 @@ export function WalletSection({
             <Card
               key={wallet.id}
               className={cn(
-                "border bg-gradient-to-r overflow-hidden",
+                "border bg-linear-to-r overflow-hidden",
                 WALLET_COLORS[wallet.type] || WALLET_COLORS.cash,
               )}
             >

@@ -16,7 +16,7 @@ export function PhotoCropDialog({
   onConfirm,
   onCancel,
 }: PhotoCropDialogProps) {
-  const { language } = useLanguage();
+  const { t } = useLanguage();
   const [imageUrl, setImageUrl] = useState("");
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -109,27 +109,11 @@ export function PhotoCropDialog({
     );
   }, [imgSize, scale, offset, onConfirm]);
 
-  const t = {
-    id: {
-      title: "Atur Posisi Foto",
-      hint: "Geser dan zoom untuk menyesuaikan",
-      cancel: "Batal",
-      confirm: "Konfirmasi",
-    },
-    en: {
-      title: "Adjust Photo Position",
-      hint: "Drag and zoom to adjust",
-      cancel: "Cancel",
-      confirm: "Confirm",
-    },
-  };
-  const l = t[language];
-
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4">
+    <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-sm bg-background rounded-2xl p-5 space-y-4 shadow-xl animate-in zoom-in-95">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold">{l.title}</h3>
+          <h3 className="text-base font-semibold">{t.photoCrop.title}</h3>
           <button
             onClick={onCancel}
             className="p-1 rounded-full hover:bg-muted"
@@ -180,7 +164,9 @@ export function PhotoCropDialog({
           <ZoomIn className="h-4 w-4 text-muted-foreground shrink-0" />
         </div>
 
-        <p className="text-xs text-center text-muted-foreground">{l.hint}</p>
+        <p className="text-xs text-center text-muted-foreground">
+          {t.photoCrop.hint}
+        </p>
 
         {/* Hidden canvas for export */}
         <canvas ref={canvasRef} className="hidden" />
@@ -191,10 +177,10 @@ export function PhotoCropDialog({
             className="flex-1 rounded-xl"
             onClick={onCancel}
           >
-            {l.cancel}
+            {t.photoCrop.cancel}
           </Button>
           <Button className="flex-1 rounded-xl" onClick={handleConfirm}>
-            {l.confirm}
+            {t.photoCrop.confirm}
           </Button>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
-import { formatCurrency, calculatePercentage } from "@/lib/utils/currency";
+import { formatCurrency } from "@/lib/utils/currency";
 
 interface CategorySpending {
   id: string;

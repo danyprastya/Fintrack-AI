@@ -8,12 +8,7 @@ import { SummaryCards } from "@/components/analytics/summary-cards";
 import { SpendingChart } from "@/components/analytics/spending-chart";
 import { cn } from "@/lib/utils";
 import { BarChart3, Loader2 } from "lucide-react";
-import {
-  getTransactions,
-  computeMonthlyTotals,
-  computeCategorySpending,
-  type TransactionDoc,
-} from "@/lib/firestore-service";
+import { getTransactions, type TransactionDoc } from "@/lib/firestore-service";
 
 type Period = "weekly" | "monthly" | "yearly";
 
@@ -182,7 +177,7 @@ export default function AnalyticsPage() {
               <BarChart3 className="h-8 w-8 text-muted-foreground/60" />
             </div>
             <p className="text-sm font-semibold">{t.emptyState.noAnalytics}</p>
-            <p className="text-xs text-muted-foreground/70 mt-1 text-center max-w-[220px]">
+            <p className="text-xs text-muted-foreground/70 mt-1 text-center max-w-55">
               {t.emptyState.noAnalyticsDesc}
             </p>
           </div>

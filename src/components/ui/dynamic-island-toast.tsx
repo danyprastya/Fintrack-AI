@@ -101,7 +101,7 @@ export function DynamicIslandToastProvider({
       {children}
 
       {/* Toast Container — iOS Dynamic Island position */}
-      <div className="fixed top-3 left-0 right-0 z-[9999] flex flex-col items-center gap-2 pointer-events-none">
+      <div className="fixed top-3 left-0 right-0 z-9999 flex flex-col items-center gap-2 pointer-events-none">
         <AnimatePresence mode="popLayout">
           {toasts.map((toast) => (
             <div key={toast.id} className="pointer-events-auto">

@@ -27,7 +27,7 @@ type Step = "form" | "otp";
 
 export default function LoginPage() {
   const { signIn, signInWithGoogle, signInWithToken } = useAuth();
-  const { language, t: globalT } = useLanguage();
+  const { language, t } = useLanguage();
   const { showToast } = useDynamicIslandToast();
   const router = useRouter();
 
@@ -58,77 +58,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const t = {
-    id: {
-      subtitle: "Kelola keuangan Anda dengan cerdas",
-      login: "Masuk",
-      register: "Daftar",
-      name: "Nama Lengkap",
-      email: "Email",
-      password: "Kata Sandi",
-      phone: "Nomor WhatsApp",
-      phonePlaceholder: "08xxxxxxxxxx",
-      orWith: "atau masuk dengan",
-      google: "Google",
-      noAccount: "Belum punya akun?",
-      hasAccount: "Sudah punya akun?",
-      registerHere: "Daftar di sini",
-      loginHere: "Masuk di sini",
-      errorLogin: "Email atau kata sandi salah",
-      errorGoogle: "Gagal masuk dengan Google",
-      sendOtp: "Kirim Kode Verifikasi",
-      verifyTitle: "Verifikasi Nomor HP",
-      verifySub: "Masukkan 6 digit kode yang dikirim ke WhatsApp",
-      verify: "Verifikasi",
-      resend: "Kirim Ulang",
-      resendIn: "Kirim ulang dalam",
-      back: "Kembali",
-      pwMin: "Minimal 8 karakter",
-      pwUpper: "Huruf besar (A-Z)",
-      pwLower: "Huruf kecil (a-z)",
-      pwNumber: "Angka (0-9)",
-      pwSpecial: "Karakter spesial (!@#$%)",
-      pwStrength: "Keamanan Password",
-      secureInfo: "Data Anda dienkripsi dan dilindungi",
-      devOtpLabel: "Dev OTP",
-    },
-    en: {
-      subtitle: "Manage your finances smartly",
-      login: "Sign In",
-      register: "Sign Up",
-      name: "Full Name",
-      email: "Email",
-      password: "Password",
-      phone: "WhatsApp Number",
-      phonePlaceholder: "08xxxxxxxxxx",
-      orWith: "or sign in with",
-      google: "Google",
-      noAccount: "Don't have an account?",
-      hasAccount: "Already have an account?",
-      registerHere: "Register here",
-      loginHere: "Sign in here",
-      errorLogin: "Invalid email or password",
-      errorGoogle: "Failed to sign in with Google",
-      sendOtp: "Send Verification Code",
-      verifyTitle: "Verify Phone Number",
-      verifySub: "Enter the 6-digit code sent to your WhatsApp",
-      verify: "Verify",
-      resend: "Resend Code",
-      resendIn: "Resend in",
-      back: "Back",
-      pwMin: "At least 8 characters",
-      pwUpper: "Uppercase letter (A-Z)",
-      pwLower: "Lowercase letter (a-z)",
-      pwNumber: "Number (0-9)",
-      pwSpecial: "Special character (!@#$%)",
-      pwStrength: "Password Strength",
-      secureInfo: "Your data is encrypted and protected",
-      devOtpLabel: "Dev OTP",
-    },
-  };
-
-  const l = t[language];
-
   // Password strength
   const pwChecks: PasswordCheck = checkPasswordStrength(password);
   const allPwValid = Object.values(pwChecks).every(Boolean);
@@ -147,11 +76,11 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await signIn(email, password);
-      showToast("success", globalT.toast.loginSuccess);
+      showToast("success", t.toast.loginSuccess);
       router.push("/");
     } catch {
-      setError(l.errorLogin);
-      showToast("error", globalT.toast.loginFailed);
+      setError(t.login.errorLogin);
+      showToast("error", t.toast.loginFailed);
     } finally {
       setIsLoading(false);
     }
@@ -187,8 +116,8 @@ export default function LoginPage() {
           data.error?.includes("sudah") ||
           res.status === 409
         ) {
-          showToast("error", globalT.toast.accountExists);
-          setError(globalT.toast.accountExists);
+          showToast("error", t.toast.accountExists);
+          setError(t.toast.accountExists);
         } else {
           setError(data.error || "Registration failed");
         }
@@ -269,9 +198,7 @@ export default function LoginPage() {
       await signInWithToken(data.customToken);
       router.push("/");
     } catch {
-      setError(
-        language === "id" ? "Gagal memverifikasi." : "Verification failed.",
-      );
+      setError(t.login.verifyFailed);
     } finally {
       setIsLoading(false);
     }
@@ -297,9 +224,7 @@ export default function LoginPage() {
       setResendTimer(60);
       setOtpDigits(["", "", "", "", "", ""]);
     } catch {
-      setError(
-        language === "id" ? "Gagal mengirim ulang." : "Failed to resend.",
-      );
+      setError(t.login.resendFailed);
     } finally {
       setIsLoading(false);
     }
@@ -311,29 +236,29 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await signInWithGoogle();
-      showToast("success", globalT.toast.loginSuccess);
+      showToast("success", t.toast.loginSuccess);
       router.push("/");
     } catch (err: unknown) {
       const firebaseError = err as { code?: string; message?: string };
       if (firebaseError.code === "auth/unauthorized-domain") {
-        setError(globalT.toast.unauthorized);
-        showToast("error", globalT.toast.unauthorized);
+        setError(t.toast.unauthorized);
+        showToast("error", t.toast.unauthorized);
       } else if (firebaseError.code === "auth/popup-closed-by-user") {
-        setError(globalT.toast.popupClosed);
-        showToast("warning", globalT.toast.popupClosed);
+        setError(t.toast.popupClosed);
+        showToast("warning", t.toast.popupClosed);
       } else if (
         firebaseError.code === "auth/operation-not-allowed" ||
         firebaseError.code === "auth/admin-restricted-operation"
       ) {
-        setError(globalT.toast.googleNotEnabled);
-        showToast("error", globalT.toast.googleNotEnabled);
+        setError(t.toast.googleNotEnabled);
+        showToast("error", t.toast.googleNotEnabled);
       } else if (firebaseError.code === "auth/cancelled-popup-request") {
         // User opened multiple popups, ignore silently
       } else {
         setError(
-          `${globalT.toast.googleFailed}${firebaseError.code ? ` (${firebaseError.code})` : ""}`,
+          `${t.toast.googleFailed}${firebaseError.code ? ` (${firebaseError.code})` : ""}`,
         );
-        showToast("error", globalT.toast.googleFailed);
+        showToast("error", t.toast.googleFailed);
       }
     } finally {
       setIsLoading(false);
@@ -355,7 +280,7 @@ export default function LoginPage() {
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            {l.back}
+            {t.login.back}
           </button>
 
           {/* Icon */}
@@ -364,10 +289,10 @@ export default function LoginPage() {
               <ShieldCheck className="h-8 w-8 text-primary" />
             </div>
             <h1 className="text-xl font-bold text-foreground">
-              {l.verifyTitle}
+              {t.login.verifyTitle}
             </h1>
             <p className="text-sm text-muted-foreground mt-1 text-center">
-              {l.verifySub}
+              {t.login.verifySub}
             </p>
             <p className="text-sm font-medium text-primary mt-2">
               +62 {phone.replace(/^0/, "")}
@@ -405,7 +330,7 @@ export default function LoginPage() {
           {devOtp && (
             <div className="text-center mb-4 p-2 bg-amber-500/10 rounded-lg">
               <p className="text-xs text-amber-600 dark:text-amber-400 font-mono">
-                {l.devOtpLabel}: {devOtp}
+                {t.login.devOtpLabel}: {devOtp}
               </p>
             </div>
           )}
@@ -423,7 +348,7 @@ export default function LoginPage() {
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              l.verify
+              t.login.verify
             )}
           </button>
 
@@ -431,7 +356,7 @@ export default function LoginPage() {
           <div className="text-center mt-4">
             {resendTimer > 0 ? (
               <p className="text-sm text-muted-foreground">
-                {l.resendIn}{" "}
+                {t.login.resendIn}{" "}
                 <span className="font-medium text-foreground">
                   {resendTimer}s
                 </span>
@@ -442,7 +367,7 @@ export default function LoginPage() {
                 disabled={isLoading}
                 className="text-sm text-primary font-medium hover:underline disabled:opacity-50"
               >
-                {l.resend}
+                {t.login.resend}
               </button>
             )}
           </div>
@@ -466,7 +391,7 @@ export default function LoginPage() {
           />
         </div>
         <h1 className="text-2xl font-bold text-foreground">FinTrack AI</h1>
-        <p className="text-sm text-muted-foreground mt-1">{l.subtitle}</p>
+        <p className="text-sm text-muted-foreground mt-1">{t.login.subtitle}</p>
       </div>
 
       {/* Tab */}
@@ -483,7 +408,7 @@ export default function LoginPage() {
               : "text-muted-foreground",
           )}
         >
-          {l.login}
+          {t.login.login}
         </button>
         <button
           onClick={() => {
@@ -497,7 +422,7 @@ export default function LoginPage() {
               : "text-muted-foreground",
           )}
         >
-          {l.register}
+          {t.login.register}
         </button>
       </div>
 
@@ -512,7 +437,7 @@ export default function LoginPage() {
             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder={l.name}
+              placeholder={t.login.name}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="pl-10 h-12 rounded-xl"
@@ -527,7 +452,7 @@ export default function LoginPage() {
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="email"
-            placeholder={l.email}
+            placeholder={t.login.email}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="pl-10 h-12 rounded-xl"
@@ -542,7 +467,7 @@ export default function LoginPage() {
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="tel"
-              placeholder={l.phonePlaceholder}
+              placeholder={t.login.phonePlaceholder}
               value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/[^\d+]/g, ""))}
               className="pl-10 h-12 rounded-xl"
@@ -558,7 +483,7 @@ export default function LoginPage() {
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type={showPassword ? "text" : "password"}
-            placeholder={l.password}
+            placeholder={t.login.password}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="pl-10 pr-10 h-12 rounded-xl"
@@ -582,13 +507,13 @@ export default function LoginPage() {
         {isRegister && password.length > 0 && (
           <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
             <p className="text-xs font-medium text-muted-foreground mb-2">
-              {l.pwStrength}
+              {t.login.pwStrength}
             </p>
-            <PwCheck passed={pwChecks.minLength} label={l.pwMin} />
-            <PwCheck passed={pwChecks.hasUppercase} label={l.pwUpper} />
-            <PwCheck passed={pwChecks.hasLowercase} label={l.pwLower} />
-            <PwCheck passed={pwChecks.hasNumber} label={l.pwNumber} />
-            <PwCheck passed={pwChecks.hasSpecial} label={l.pwSpecial} />
+            <PwCheck passed={pwChecks.minLength} label={t.login.pwMin} />
+            <PwCheck passed={pwChecks.hasUppercase} label={t.login.pwUpper} />
+            <PwCheck passed={pwChecks.hasLowercase} label={t.login.pwLower} />
+            <PwCheck passed={pwChecks.hasNumber} label={t.login.pwNumber} />
+            <PwCheck passed={pwChecks.hasSpecial} label={t.login.pwSpecial} />
           </div>
         )}
 
@@ -605,9 +530,9 @@ export default function LoginPage() {
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : isRegister ? (
-            l.sendOtp
+            t.login.sendOtp
           ) : (
-            l.login
+            t.login.login
           )}
         </button>
       </form>
@@ -615,7 +540,7 @@ export default function LoginPage() {
       {/* Divider */}
       <div className="w-full max-w-sm flex items-center gap-3 my-6">
         <div className="flex-1 h-px bg-border" />
-        <span className="text-xs text-muted-foreground">{l.orWith}</span>
+        <span className="text-xs text-muted-foreground">{t.login.orWith}</span>
         <div className="flex-1 h-px bg-border" />
       </div>
 
@@ -643,12 +568,12 @@ export default function LoginPage() {
             d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
           />
         </svg>
-        {l.google}
+        {t.login.google}
       </button>
 
       {/* Toggle + Security badge */}
       <p className="text-sm text-muted-foreground mt-6">
-        {isRegister ? l.hasAccount : l.noAccount}{" "}
+        {isRegister ? t.login.hasAccount : t.login.noAccount}{" "}
         <button
           onClick={() => {
             setIsRegister(!isRegister);
@@ -656,13 +581,13 @@ export default function LoginPage() {
           }}
           className="text-primary font-medium hover:underline"
         >
-          {isRegister ? l.loginHere : l.registerHere}
+          {isRegister ? t.login.loginHere : t.login.registerHere}
         </button>
       </p>
 
       <div className="flex items-center gap-1.5 mt-4 text-muted-foreground/60">
         <ShieldCheck className="h-3.5 w-3.5" />
-        <span className="text-[11px]">{l.secureInfo}</span>
+        <span className="text-[11px]">{t.login.secureInfo}</span>
       </div>
     </div>
   );

@@ -23,7 +23,7 @@ A modern, mobile-first Progressive Web App for tracking personal finances. Scan 
 
 - 📊 **Dashboard** — At-a-glance financial overview with balance card, quick actions, and budget progress
 - 💳 **Transaction Management** — Add, categorize, and browse income/expense/transfer records with swipeable actions
-- 📸 **AI Receipt Scanner** — Snap a photo of any receipt and let Tesseract.js OCR extract the data automatically
+- 📸 **AI Receipt Scanner** — Snap a photo of any receipt and let Gemini Flash AI extract the data automatically
 - 🤖 **Telegram Bot** — Log transactions on-the-go via Telegram with natural language commands
 - 📈 **Analytics** — Interactive Apple-style Activity Rings for top spending categories and monthly trends
 
@@ -62,7 +62,7 @@ A modern, mobile-first Progressive Web App for tracking personal finances. Scan 
 | **Icons**      | Lucide React                           |
 | **Animations** | Motion (Framer Motion) 12              |
 | **Backend**    | Firebase (Firestore, Auth, Storage)    |
-| **OCR Engine** | Tesseract.js 7                         |
+| **OCR Engine** | Google Gemini Flash 2.0 (server-side)  |
 | **Toasts**     | Sonner 2                               |
 | **Font**       | Geist Sans & Geist Mono                |
 | **PWA**        | next-pwa 5                             |
