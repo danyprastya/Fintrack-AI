@@ -3,7 +3,13 @@
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
 import { formatCurrency } from "@/lib/utils/currency";
-import { ArrowUpRight, ArrowDownRight, ArrowLeftRight } from "lucide-react";
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  ArrowLeftRight,
+  Inbox,
+} from "lucide-react";
+import { CategoryIcon } from "@/lib/category-icons";
 import Link from "next/link";
 
 interface TransactionPreview {
@@ -66,7 +72,7 @@ export function RecentTransactions({
 
       {transactions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-          <span className="text-3xl mb-2">📭</span>
+          <Inbox className="h-8 w-8 mb-2 text-muted-foreground/50" />
           <p className="text-sm font-medium">{t.dashboard.noTransactions}</p>
           <p className="text-xs text-muted-foreground/70 mt-0.5">
             {t.emptyState.noTransactionsDesc}
@@ -82,8 +88,11 @@ export function RecentTransactions({
                 key={tx.id}
                 className="flex items-center gap-3 rounded-2xl p-3 bg-card shadow-sm ring-1 ring-border/60 hover:bg-muted/50 transition-colors cursor-pointer"
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-lg">
-                  {tx.categoryIcon}
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+                  <CategoryIcon
+                    icon={tx.categoryIcon || tx.category}
+                    className="h-4.5 w-4.5 text-muted-foreground"
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">

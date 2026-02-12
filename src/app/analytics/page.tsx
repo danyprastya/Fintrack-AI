@@ -115,8 +115,7 @@ export default function AnalyticsPage() {
 
       // BUG FIX: Filter category breakdown by filterType
       // Only show categories matching the selected type
-      const typeForCategories =
-        filterType === "all" ? null : filterType;
+      const typeForCategories = filterType === "all" ? null : filterType;
 
       const catMap = new Map<string, { icon: string; amount: number }>();
       for (const tx of filtered) {
@@ -125,7 +124,7 @@ export default function AnalyticsPage() {
 
         const key = tx.category || "others";
         const existing = catMap.get(key) || {
-          icon: tx.categoryIcon || "📦",
+          icon: tx.categoryIcon || key,
           amount: 0,
         };
         existing.amount += tx.amount;
@@ -158,6 +157,36 @@ export default function AnalyticsPage() {
 
   const hasData = totalIncome > 0 || totalExpense > 0;
 
+  // Compute date range label
+  const dateRangeLabel = useMemo(() => {
+    const now = new Date();
+    const monthNames = [
+      t.months.jan,
+      t.months.feb,
+      t.months.mar,
+      t.months.apr,
+      t.months.may,
+      t.months.jun,
+      t.months.jul,
+      t.months.aug,
+      t.months.sep,
+      t.months.oct,
+      t.months.nov,
+      t.months.dec,
+    ];
+
+    if (period === "weekly") {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const fmt = (d: Date) => `${d.getDate()} ${monthNames[d.getMonth()]}`;
+      return `${fmt(weekAgo)} – ${fmt(now)} ${now.getFullYear()}`;
+    } else if (period === "yearly") {
+      return `${now.getFullYear()}`;
+    } else {
+      return `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+    }
+  }, [period, t.months]);
+
   return (
     <div className="flex flex-col min-h-screen">
       <PageHeader title={t.analytics.title} />
@@ -180,7 +209,10 @@ export default function AnalyticsPage() {
             </button>
           ))}
         </div>
-
+        {/* Date Range Label */}
+        <p className="text-center text-xs text-muted-foreground font-medium -mt-3">
+          {dateRangeLabel}
+        </p>
         {/* Summary Cards */}
         <SummaryCards totalIncome={totalIncome} totalExpense={totalExpense} />
 
@@ -245,6 +277,7 @@ export default function AnalyticsPage() {
                   <SpendingRings
                     categories={categoryData}
                     totalSpending={totalCategoryAmount}
+                    type={filterType as "income" | "expense"}
                   />
                 </>
               )}

@@ -3,6 +3,7 @@
 import { useRef, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/currency";
+import { CategoryIcon } from "@/lib/category-icons";
 import { useLanguage } from "@/contexts/language-context";
 import {
   ArrowUpRight,
@@ -34,7 +35,7 @@ const TYPE_STYLES = {
 };
 
 const SWIPE_THRESHOLD = 40;
-const MAX_SWIPE = 144; // Width of both buttons combined (72px each)
+const MAX_SWIPE = 110; // Width of both buttons combined (72px each)
 
 export function SwipeableTransactionItem({
   id,
@@ -144,26 +145,30 @@ export function SwipeableTransactionItem({
       className={cn("relative overflow-hidden rounded-2xl", className)}
     >
       {/* Action buttons behind */}
-      <div className="absolute right-0 top-0 bottom-0 flex items-stretch z-0">
+      <div className="absolute right-0 top-0 bottom-0 flex mr-1 items-stretch z-0">
         <button
           onClick={() => {
             closeSwipe();
             onEdit?.(id);
           }}
-          className="flex items-center justify-center w-[72px] bg-primary text-primary-foreground gap-1 flex-col"
+          className="flex items-center justify-center w-[15vw] bg-primary text-primary-foreground gap-1 flex-col"
         >
           <Pencil className="h-4 w-4" />
-          <span className="text-[10px] font-medium leading-tight">{t.general.edit}</span>
+          <span className="text-[10px] font-medium leading-tight">
+            {t.general.edit}
+          </span>
         </button>
         <button
           onClick={() => {
             closeSwipe();
             onDelete?.(id);
           }}
-          className="flex items-center justify-center rounded-r-2xl w-[72px] bg-destructive text-white gap-1 flex-col"
+          className="flex items-center justify-center rounded-r-2xl w-[15vw] bg-destructive text-white gap-1 flex-col"
         >
           <Trash2 className="h-4 w-4" />
-          <span className="text-[10px] font-medium leading-tight">{t.general.delete}</span>
+          <span className="text-[10px] font-medium leading-tight">
+            {t.general.delete}
+          </span>
         </button>
       </div>
 
@@ -179,8 +184,11 @@ export function SwipeableTransactionItem({
         onTouchEnd={handleTouchEnd}
         onMouseDown={handleMouseDown}
       >
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted text-lg">
-          {categoryIcon}
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted">
+          <CategoryIcon
+            icon={categoryIcon || categoryName}
+            className="h-5 w-5 text-muted-foreground"
+          />
         </div>
 
         <div className="flex-1 min-w-0">

@@ -45,36 +45,39 @@ export default function ScanPage() {
     getWallets(user.uid).then(setWallets).catch(console.error);
   }, [user?.uid]);
 
-  const processImage = useCallback(async (image: Blob | File) => {
-    setState("processing");
+  const processImage = useCallback(
+    async (image: Blob | File) => {
+      setState("processing");
 
-    try {
-      const formData = new FormData();
-      formData.append("image", image);
+      try {
+        const formData = new FormData();
+        formData.append("image", image);
 
-      const res = await fetch("/api/ocr/recognize", {
-        method: "POST",
-        body: formData,
-      });
+        const res = await fetch("/api/ocr/recognize", {
+          method: "POST",
+          body: formData,
+        });
 
-      if (!res.ok) {
-        throw new Error("OCR API error");
+        if (!res.ok) {
+          throw new Error("OCR API error");
+        }
+
+        const data = await res.json();
+
+        setResult({
+          total: data.total,
+          date: data.date || null,
+          merchant: data.merchant || null,
+        });
+        setState("result");
+      } catch (error) {
+        console.error("OCR Error:", error);
+        showToast("error", t.toast.ocrFailed);
+        setState("camera");
       }
-
-      const data = await res.json();
-
-      setResult({
-        total: data.total,
-        date: data.date || null,
-        merchant: data.merchant || null,
-      });
-      setState("result");
-    } catch (error) {
-      console.error("OCR Error:", error);
-      showToast("error", t.toast.ocrFailed);
-      setState("camera");
-    }
-  }, [showToast, t]);
+    },
+    [showToast, t],
+  );
 
   const handleSave = useCallback(
     async (data: { total: number; merchant: string; date: string }) => {
@@ -84,17 +87,6 @@ export default function ScanPage() {
         const categoryName = data.merchant
           ? categorizeMerchant(data.merchant)
           : "others";
-
-        const CATEGORY_ICONS: Record<string, string> = {
-          foodDrinks: "🍔",
-          transportation: "🚗",
-          shopping: "🛍️",
-          entertainment: "🎬",
-          bills: "📄",
-          health: "💊",
-          education: "📚",
-          others: "📦",
-        };
 
         const txDate = data.date
           ? Timestamp.fromDate(new Date(data.date))
@@ -106,7 +98,7 @@ export default function ScanPage() {
           amount: data.total,
           description: data.merchant || t.scan.ocrDefaultDesc,
           category: categoryName,
-          categoryIcon: CATEGORY_ICONS[categoryName] || "📦",
+          categoryIcon: categoryName,
           walletId: wallets.length > 0 ? wallets[0].id : undefined,
           date: txDate,
           source: "ocr",

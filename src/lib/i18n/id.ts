@@ -147,6 +147,13 @@ export const id: Translations = {
     exporting: 'Mengekspor...',
     downloadCsv: 'Unduh CSV',
     googleAuthInfo: 'Anda masuk menggunakan Google. Kata sandi dikelola oleh Google.',
+    editWallet: 'Edit Dompet',
+    deleteWalletTitle: 'Hapus Dompet',
+    deleteWalletConfirm: 'Yakin ingin menghapus dompet ini? Semua transaksi terkait juga akan dihapus.',
+    customCategories: 'Kategori Kustom',
+    addCategory: 'Tambah Kategori',
+    categoryName: 'Nama kategori',
+    walletColor: 'Warna Dompet',
   },
 
   login: {
@@ -205,6 +212,12 @@ export const id: Translations = {
     deletePhotoFailed: 'Gagal menghapus foto',
     saveFailed: 'Gagal menyimpan',
     signOutFailed: 'Gagal keluar',
+    unsupportedFormat: 'Format tidak didukung. Gunakan JPG, PNG, atau WebP',
+    photoReady: 'Foto siap — ketuk Simpan untuk menerapkan',
+    discardTitle: 'Buang Perubahan?',
+    discardMessage: 'Ada perubahan yang belum disimpan. Yakin ingin keluar?',
+    discard: 'Buang',
+    continueEditing: 'Lanjut Edit',
   },
 
   telegram: {

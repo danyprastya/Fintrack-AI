@@ -147,6 +147,13 @@ export const en: Translations = {
     exporting: 'Exporting...',
     downloadCsv: 'Download CSV',
     googleAuthInfo: "You're signed in with Google. Password is managed by Google.",
+    editWallet: 'Edit Wallet',
+    deleteWalletTitle: 'Delete Wallet',
+    deleteWalletConfirm: 'Are you sure you want to delete this wallet? All related transactions will also be deleted.',
+    customCategories: 'Custom Categories',
+    addCategory: 'Add Category',
+    categoryName: 'Category name',
+    walletColor: 'Wallet Color',
   },
 
   login: {
@@ -205,6 +212,12 @@ export const en: Translations = {
     deletePhotoFailed: 'Failed to delete photo',
     saveFailed: 'Failed to save',
     signOutFailed: 'Sign out failed',
+    unsupportedFormat: 'Unsupported format. Use JPG, PNG, or WebP',
+    photoReady: 'Photo ready — tap Save to apply',
+    discardTitle: 'Discard Changes?',
+    discardMessage: 'You have unsaved changes. Are you sure you want to leave?',
+    discard: 'Discard',
+    continueEditing: 'Continue Editing',
   },
 
   telegram: {

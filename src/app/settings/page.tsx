@@ -12,6 +12,12 @@ import { LanguageSelector } from "@/components/settings/language-selector";
 import { WalletSection } from "@/components/settings/wallet-section";
 import { TelegramLinkSection } from "@/components/settings/telegram-link";
 import { ConfirmationDialog } from "@/components/shared/confirmation-dialog";
+import { BottomSheet } from "@/components/shared/bottom-sheet";
+import {
+  IconPickerDialog,
+  IconPickerButton,
+} from "@/components/shared/icon-picker";
+import { CategoryIcon } from "@/lib/category-icons";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,10 +32,14 @@ import {
   ChevronRight,
   Moon,
   Tag,
-  X,
   Download,
   Lock,
   Loader2,
+  Plus,
+  Trash2,
+  Coins,
+  BarChart3,
+  Check,
 } from "lucide-react";
 import {
   getWallets,
@@ -39,8 +49,12 @@ import {
   updateBudget,
   deleteBudget,
   updateWallet,
+  getCustomCategories,
+  createCustomCategory,
+  deleteCustomCategory,
   type WalletDoc,
   type BudgetDoc,
+  type CustomCategoryDoc,
 } from "@/lib/firestore-service";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { convertCurrency } from "@/lib/utils/exchange-rates";
@@ -93,34 +107,6 @@ function SettingsItem({
   );
 }
 
-// Bottom Sheet wrapper
-function BottomSheet({
-  open,
-  onClose,
-  title,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-55 flex items-end justify-center bg-black/40">
-      <div className="w-full max-w-lg bg-background rounded-t-2xl p-5 space-y-4 animate-in slide-in-from-bottom max-h-[80vh] overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold">{title}</h3>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-muted">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
 const CURRENCIES = [
   { code: "IDR", symbol: "Rp", name: "Rupiah Indonesia" },
   { code: "USD", symbol: "$", name: "US Dollar" },
@@ -132,18 +118,18 @@ const CURRENCIES = [
 ];
 
 const ALL_CATEGORIES = [
-  { name: "foodDrinks", icon: "🍔", type: "expense" },
-  { name: "transportation", icon: "🚗", type: "expense" },
-  { name: "shopping", icon: "🛍️", type: "expense" },
-  { name: "entertainment", icon: "🎬", type: "expense" },
-  { name: "bills", icon: "📄", type: "expense" },
-  { name: "health", icon: "💊", type: "expense" },
-  { name: "education", icon: "📚", type: "expense" },
-  { name: "salary", icon: "💰", type: "income" },
-  { name: "investment", icon: "📈", type: "income" },
-  { name: "freelance", icon: "💻", type: "income" },
-  { name: "gift", icon: "🎁", type: "income" },
-  { name: "others", icon: "📦", type: "both" },
+  { name: "foodDrinks", icon: "foodDrinks", type: "expense" },
+  { name: "transportation", icon: "transportation", type: "expense" },
+  { name: "shopping", icon: "shopping", type: "expense" },
+  { name: "entertainment", icon: "entertainment", type: "expense" },
+  { name: "bills", icon: "bills", type: "expense" },
+  { name: "health", icon: "health", type: "expense" },
+  { name: "education", icon: "education", type: "expense" },
+  { name: "salary", icon: "salary", type: "income" },
+  { name: "investment", icon: "investment", type: "income" },
+  { name: "freelance", icon: "freelance", type: "income" },
+  { name: "gift", icon: "gift", type: "income" },
+  { name: "others", icon: "others", type: "both" },
 ];
 
 export default function SettingsPage() {
@@ -164,6 +150,14 @@ export default function SettingsPage() {
   const [showSecurity, setShowSecurity] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+
+  // Filter states for categories & budget
+  const [catFilter, setCatFilter] = useState<"all" | "income" | "expense">(
+    "all",
+  );
+  const [budgetFilter, setBudgetFilter] = useState<
+    "all" | "income" | "expense"
+  >("all");
 
   // Currency state
   const [selectedCurrency, setSelectedCurrency] = useState(() => {
@@ -188,9 +182,24 @@ export default function SettingsPage() {
   const [budgetAmount, setBudgetAmount] = useState("");
   const [isSavingBudget, setIsSavingBudget] = useState(false);
 
+  // Custom categories state
+  const [customCategories, setCustomCategories] = useState<CustomCategoryDoc[]>(
+    [],
+  );
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatIcon, setNewCatIcon] = useState("package");
+  const [newCatType, setNewCatType] = useState<"expense" | "income" | "both">(
+    "expense",
+  );
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [showIconPicker, setShowIconPicker] = useState(false);
+
   useEffect(() => {
     if (!user?.uid) return;
     getWallets(user.uid).then(setWallets).catch(console.error);
+    getCustomCategories(user.uid)
+      .then(setCustomCategories)
+      .catch(console.error);
   }, [user?.uid]);
 
   // Load budgets when budget sheet opens
@@ -213,12 +222,14 @@ export default function SettingsPage() {
       const existing = budgets.find((b) => b.categoryName === budgetCategory);
 
       if (existing) {
-        await updateBudget(existing.id, { limit: parseFloat(budgetAmount) || 0 });
+        await updateBudget(existing.id, {
+          limit: parseFloat(budgetAmount) || 0,
+        });
       } else {
         await createBudget({
           userId: user.uid,
           categoryName: budgetCategory,
-          categoryIcon: cat?.icon || "📦",
+          categoryIcon: cat?.icon || "others",
           limit: parseFloat(budgetAmount) || 0,
           spent: 0,
           month,
@@ -253,6 +264,48 @@ export default function SettingsPage() {
     [showToast, t],
   );
 
+  const handleAddCustomCategory = useCallback(async () => {
+    if (!user?.uid || !newCatName.trim()) return;
+    try {
+      await createCustomCategory({
+        userId: user.uid,
+        name: newCatName.trim(),
+        icon: newCatIcon,
+        type: newCatType,
+      });
+      const updated = await getCustomCategories(user.uid);
+      setCustomCategories(updated);
+      setNewCatName("");
+      setNewCatIcon("package");
+      setShowAddCategory(false);
+      showToast("success", t.toast.transactionAdded);
+    } catch (err) {
+      console.error("Add custom category error:", err);
+      showToast("error", t.toast.addFailed);
+    }
+  }, [user?.uid, newCatName, newCatIcon, newCatType, showToast, t]);
+
+  const handleDeleteCustomCategory = useCallback(
+    async (id: string) => {
+      try {
+        await deleteCustomCategory(id);
+        setCustomCategories((prev) => prev.filter((c) => c.id !== id));
+        showToast("success", t.toast.transactionDeleted);
+      } catch (err) {
+        console.error("Delete custom category error:", err);
+      }
+    },
+    [showToast, t],
+  );
+
+  // Merge default + custom categories for budget
+  const allBudgetCategories = [
+    ...ALL_CATEGORIES.filter((c) => c.type === "expense" || c.type === "both"),
+    ...customCategories
+      .filter((c) => c.type === "expense" || c.type === "both")
+      .map((c) => ({ name: c.name, icon: c.icon, type: c.type })),
+  ];
+
   const handleSignOut = useCallback(async () => {
     setIsSigningOut(true);
     try {
@@ -274,7 +327,6 @@ export default function SettingsPage() {
       setSelectedCurrency(code);
       localStorage.setItem("fintrack-currency", code);
 
-      // Convert all wallet balances
       if (oldCurrency !== code && wallets.length > 0 && user?.uid) {
         try {
           for (const w of wallets) {
@@ -283,7 +335,6 @@ export default function SettingsPage() {
             );
             await updateWallet(w.id, { balance: newBalance });
           }
-          // Refresh wallets
           const updated = await getWallets(user.uid);
           setWallets(updated);
         } catch (err) {
@@ -384,8 +435,66 @@ export default function SettingsPage() {
     name: w.name,
     type: (w.type as "cash" | "bank" | "ewallet") || "cash",
     balance: w.balance || 0,
-    icon: w.icon || "💳",
+    icon: w.icon || "cash",
+    color: w.color,
   }));
+
+  // Filtered categories for display
+  const filteredCategories = ALL_CATEGORIES.filter((c) => {
+    if (catFilter === "all") return true;
+    if (catFilter === "expense")
+      return c.type === "expense" || c.type === "both";
+    return c.type === "income" || c.type === "both";
+  });
+
+  // Filtered budget categories
+  const filteredBudgetCategories = (() => {
+    const base = [
+      ...ALL_CATEGORIES,
+      ...customCategories.map((c) => ({
+        name: c.name,
+        icon: c.icon,
+        type: c.type,
+      })),
+    ];
+    if (budgetFilter === "all")
+      return base.filter(
+        (c) => c.type === "expense" || c.type === "both" || c.type === "income",
+      );
+    if (budgetFilter === "expense")
+      return base.filter((c) => c.type === "expense" || c.type === "both");
+    return base.filter((c) => c.type === "income" || c.type === "both");
+  })();
+
+  // Filter tabs component
+  const FilterTabs = ({
+    value,
+    onChange,
+  }: {
+    value: "all" | "income" | "expense";
+    onChange: (v: "all" | "income" | "expense") => void;
+  }) => (
+    <div className="flex gap-1.5">
+      {(["all", "expense", "income"] as const).map((f) => (
+        <button
+          key={f}
+          onClick={() => onChange(f)}
+          className={cn(
+            "px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all",
+            value === f
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:bg-muted/80",
+          )}
+        >
+          {f === "all"
+            ? t.analytics.all
+            : f === "expense"
+              ? t.transactions.expenseType
+              : t.transactions.incomeType}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -421,9 +530,10 @@ export default function SettingsPage() {
 
         <Separator />
 
-        {/* Wallets — fetched from Firestore */}
+        {/* Wallets */}
         <WalletSection
           wallets={walletData}
+          currency={selectedCurrency}
           onRefresh={() => {
             if (user?.uid) getWallets(user.uid).then(setWallets);
           }}
@@ -482,13 +592,13 @@ export default function SettingsPage() {
             onClick={() => setShowCategories(true)}
           />
           <SettingsItem
-            icon={<span className="text-sm">💰</span>}
+            icon={<Coins className="h-4 w-4 text-muted-foreground" />}
             label={t.settings.currency}
             value={selectedCurrency}
             onClick={() => setShowCurrency(true)}
           />
           <SettingsItem
-            icon={<span className="text-sm">📊</span>}
+            icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
             label={t.settings.monthlyBudget}
             onClick={() => setShowBudget(true)}
           />
@@ -560,61 +670,150 @@ export default function SettingsPage() {
         isLoading={isSigningOut}
       />
 
-      {/* Categories */}
+      {/* Categories (<50vh, filter, add in header) */}
       <BottomSheet
         open={showCategories}
-        onClose={() => setShowCategories(false)}
+        onClose={() => {
+          setShowCategories(false);
+          setShowAddCategory(false);
+        }}
         title={t.settings.categories}
+        maxHeight="48vh"
+        headerRight={
+          <button
+            onClick={() => setShowAddCategory(!showAddCategory)}
+            className="p-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        }
+        headerExtra={<FilterTabs value={catFilter} onChange={setCatFilter} />}
       >
-        <p className="text-xs text-muted-foreground mb-3">
-          {t.settings.categoriesDesc}
-        </p>
-        <div className="space-y-1">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            {t.transactions.expenseType}
-          </p>
-          {ALL_CATEGORIES.filter(
-            (c) => c.type === "expense" || c.type === "both",
-          ).map((c) => (
+        {/* Add custom category form */}
+        {showAddCategory && (
+          <div className="space-y-2 p-3 rounded-xl bg-muted/50 mb-3">
+            <div className="flex gap-2">
+              <Input
+                placeholder={t.settings.categoryName}
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                className="h-9 text-sm rounded-lg flex-1"
+              />
+              <IconPickerButton
+                value={newCatIcon}
+                onClick={() => setShowIconPicker(true)}
+              />
+            </div>
+            <div className="flex gap-2">
+              {(["expense", "income", "both"] as const).map((tp) => (
+                <button
+                  key={tp}
+                  onClick={() => setNewCatType(tp)}
+                  className={cn(
+                    "flex-1 py-1.5 rounded-lg text-xs font-medium transition-all",
+                    newCatType === tp
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background text-muted-foreground",
+                  )}
+                >
+                  {tp === "expense"
+                    ? t.transactions.expenseType
+                    : tp === "income"
+                      ? t.transactions.incomeType
+                      : t.analytics.all}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="flex-1 h-8 rounded-lg text-xs"
+                onClick={() => {
+                  setShowAddCategory(false);
+                  setNewCatName("");
+                }}
+              >
+                {t.general.cancel}
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 h-8 rounded-lg text-xs"
+                disabled={!newCatName.trim()}
+                onClick={handleAddCustomCategory}
+              >
+                {t.general.save}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-0.5">
+          {filteredCategories.map((c) => (
             <div
               key={c.name}
               className="flex items-center gap-3 py-2.5 px-2 rounded-lg"
             >
-              <span className="text-lg">{c.icon}</span>
+              <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+                <CategoryIcon
+                  icon={c.icon}
+                  className="h-4 w-4 text-muted-foreground"
+                />
+              </div>
               <span className="text-sm font-medium">
                 {t.categories[c.name as keyof typeof t.categories] || c.name}
               </span>
             </div>
           ))}
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 mt-4">
-            {t.transactions.incomeType}
-          </p>
-          {ALL_CATEGORIES.filter(
-            (c) => c.type === "income" || c.type === "both",
-          ).map((c) => (
-            <div
-              key={c.name}
-              className="flex items-center gap-3 py-2.5 px-2 rounded-lg"
-            >
-              <span className="text-lg">{c.icon}</span>
-              <span className="text-sm font-medium">
-                {t.categories[c.name as keyof typeof t.categories] || c.name}
-              </span>
-            </div>
-          ))}
+
+          {/* Custom categories */}
+          {customCategories
+            .filter((c) => {
+              if (catFilter === "all") return true;
+              if (catFilter === "expense")
+                return c.type === "expense" || c.type === "both";
+              return c.type === "income" || c.type === "both";
+            })
+            .map((c) => (
+              <div
+                key={c.id}
+                className="flex items-center justify-between py-2.5 px-2 rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+                    <CategoryIcon
+                      icon={c.icon}
+                      className="h-4 w-4 text-muted-foreground"
+                    />
+                  </div>
+                  <span className="text-sm font-medium">{c.name}</span>
+                </div>
+                <button
+                  onClick={() => handleDeleteCustomCategory(c.id)}
+                  className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
         </div>
       </BottomSheet>
 
-      {/* Currency */}
+      {/* Icon Picker */}
+      <IconPickerDialog
+        open={showIconPicker}
+        onClose={() => setShowIconPicker(false)}
+        onSelect={(key) => setNewCatIcon(key)}
+        selected={newCatIcon}
+      />
+
+      {/* Currency Bottom Sheet */}
       <BottomSheet
         open={showCurrency}
         onClose={() => setShowCurrency(false)}
         title={t.settings.selectCurrency}
       >
-        <p className="text-xs text-muted-foreground mb-3">
-          {t.settings.currencyDesc}
-        </p>
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {CURRENCIES.map((c) => (
             <button
               key={c.code}
@@ -622,21 +821,21 @@ export default function SettingsPage() {
               className={cn(
                 "flex items-center justify-between w-full py-3 px-3 rounded-xl transition-colors",
                 selectedCurrency === c.code
-                  ? "bg-primary/10 text-primary"
-                  : "hover:bg-muted",
+                  ? "bg-primary/10"
+                  : "hover:bg-muted/50",
               )}
             >
               <div className="flex items-center gap-3">
-                <span className="text-base font-mono font-bold w-6">
+                <span className="text-sm font-mono font-bold w-6">
                   {c.symbol}
                 </span>
-                <div>
+                <div className="text-left">
                   <p className="text-sm font-medium">{c.code}</p>
                   <p className="text-xs text-muted-foreground">{c.name}</p>
                 </div>
               </div>
               {selectedCurrency === c.code && (
-                <span className="text-primary text-sm">✓</span>
+                <Check className="h-4 w-4 text-primary" />
               )}
             </button>
           ))}
@@ -652,6 +851,9 @@ export default function SettingsPage() {
           setBudgetAmount("");
         }}
         title={t.settings.monthlyBudget}
+        headerExtra={
+          <FilterTabs value={budgetFilter} onChange={setBudgetFilter} />
+        }
       >
         <p className="text-xs text-muted-foreground mb-3">
           {t.settings.budgetDesc}
@@ -660,25 +862,36 @@ export default function SettingsPage() {
         {/* Add/Edit Budget Form */}
         <div className="space-y-3 pb-3">
           <div className="grid grid-cols-3 gap-2">
-            {ALL_CATEGORIES.filter((c) => c.type === "expense" || c.type === "both").map((c) => (
+            {filteredBudgetCategories.map((c) => (
               <button
                 key={c.name}
                 onClick={() => {
-                  setBudgetCategory(c.name);
-                  const existing = budgets.find(
-                    (b) => b.categoryName === c.name,
-                  );
-                  if (existing) setBudgetAmount(String(existing.limit));
-                  else setBudgetAmount("");
+                  if (budgetCategory === c.name) {
+                    setBudgetCategory("");
+                    setBudgetAmount("");
+                  } else {
+                    setBudgetCategory(c.name);
+                    const existing = budgets.find(
+                      (b) => b.categoryName === c.name,
+                    );
+                    if (existing) setBudgetAmount(String(existing.limit));
+                    else setBudgetAmount("");
+                  }
                 }}
                 className={cn(
-                  "flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-medium transition-all",
+                  "flex flex-col items-center gap-1.5 py-2.5 rounded-xl text-xs font-medium transition-all",
                   budgetCategory === c.name
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground",
                 )}
               >
-                <span className="text-base">{c.icon}</span>
+                <CategoryIcon
+                  icon={c.icon}
+                  className={cn(
+                    "h-4.5 w-4.5",
+                    budgetCategory === c.name ? "text-primary-foreground" : "",
+                  )}
+                />
                 <span className="truncate max-w-full px-1">
                   {t.categories[c.name as keyof typeof t.categories] || c.name}
                 </span>
@@ -692,6 +905,9 @@ export default function SettingsPage() {
                 placeholder={t.settings.budgetAmount}
                 value={budgetAmount}
                 onChange={(v) => setBudgetAmount(v)}
+                currencyPrefix={
+                  CURRENCIES.find((c) => c.code === selectedCurrency)?.symbol
+                }
                 className="h-10 flex-1 rounded-xl"
               />
               <Button
@@ -718,7 +934,12 @@ export default function SettingsPage() {
                 className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/50"
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="text-base">{b.categoryIcon}</span>
+                  <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+                    <CategoryIcon
+                      icon={b.categoryIcon}
+                      className="h-4 w-4 text-muted-foreground"
+                    />
+                  </div>
                   <div>
                     <p className="text-sm font-medium">
                       {t.categories[
@@ -734,14 +955,14 @@ export default function SettingsPage() {
                   onClick={() => handleDeleteBudget(b.id)}
                   className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
             ))}
           </div>
         ) : (
           <div className="flex flex-col items-center py-4 text-muted-foreground">
-            <span className="text-2xl mb-1">📊</span>
+            <BarChart3 className="h-8 w-8 mb-2 text-muted-foreground/50" />
             <p className="text-xs">{t.emptyState.noBudgets}</p>
           </div>
         )}
@@ -841,7 +1062,7 @@ export default function SettingsPage() {
       >
         <div className="flex flex-col items-center py-4">
           <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
-            <span className="text-3xl">💰</span>
+            <Coins className="h-8 w-8 text-primary" />
           </div>
           <p className="text-lg font-bold text-primary">{t.general.appName}</p>
           <p className="text-xs text-muted-foreground mt-0.5">v0.1.0</p>

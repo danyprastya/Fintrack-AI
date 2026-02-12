@@ -82,7 +82,9 @@ export function BarChartComparison({
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4, delay: 1 }}
       >
-        <span className="text-xs text-muted-foreground">{t.analytics.net}:</span>
+        <span className="text-xs text-muted-foreground">
+          {t.analytics.net}:
+        </span>
         <span
           className={cn(
             "text-sm font-bold",

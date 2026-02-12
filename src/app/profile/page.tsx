@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useDynamicIslandToast } from "@/components/ui/dynamic-island-toast";
@@ -23,15 +23,21 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState(profile?.displayName || "");
   const [isSaving, setIsSaving] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [pendingPhotoBlob, setPendingPhotoBlob] = useState<Blob | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [cropFile, setCropFile] = useState<File | null>(null);
 
   const initials = (profile?.displayName || "U").charAt(0).toUpperCase();
   const currentPhotoURL = photoPreview || profile?.photoURL;
+
+  // Track if there are unsaved changes
+  const hasNameChange = displayName.trim() !== (profile?.displayName || "");
+  const hasPhotoChange = pendingPhotoBlob !== null;
+  const hasUnsavedChanges = hasNameChange || hasPhotoChange;
 
   /** Get Firebase ID token for API calls */
   async function getIdToken(): Promise<string | null> {
@@ -44,74 +50,36 @@ export default function ProfilePage() {
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Reset
     setPhotoError(null);
 
-    // Validate type
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      showToast(
-        "error",
-        language === "id"
-          ? "Format tidak didukung. Gunakan JPG, PNG, atau WebP"
-          : "Unsupported format. Use JPG, PNG, or WebP",
-      );
+      showToast("error", t.profile.unsupportedFormat);
       return;
     }
 
-    // Open crop dialog instead of direct upload
     setCropFile(file);
-
-    // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  /** Upload cropped blob */
-  const handleCropConfirm = async (blob: Blob) => {
+  /** Store cropped blob as pending — don't upload yet */
+  const handleCropConfirm = useCallback((blob: Blob) => {
     setCropFile(null);
-
-    // Show preview immediately
     const previewUrl = URL.createObjectURL(blob);
     setPhotoPreview(previewUrl);
-    setIsUploadingPhoto(true);
-
-    try {
-      const idToken = await getIdToken();
-      if (!idToken) throw new Error("Not authenticated");
-
-      const formData = new FormData();
-      formData.append("avatar", blob, "avatar.jpg");
-
-      const res = await fetch("/api/avatar", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${idToken}` },
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Upload failed");
-      }
-
-      const { photoURL } = await res.json();
-
-      // Update local auth state
-      await updateUserProfile({ photoURL });
-      setPhotoPreview(null); // Clear preview, real URL is now in profile
-      showToast("success", t.toast.photoUpdated);
-    } catch (err) {
-      console.error("Avatar upload failed:", err);
-      setPhotoPreview(null); // Revert preview
-      showToast("error", t.toast.photoFailed);
-    } finally {
-      setIsUploadingPhoto(false);
-    }
-  };
+    setPendingPhotoBlob(blob);
+  }, []);
 
   /** Handle avatar deletion */
   const handleDeletePhoto = async () => {
-    if (!profile?.photoURL) return;
+    if (!profile?.photoURL && !pendingPhotoBlob) return;
+
+    // If there's a pending (unsaved) photo, just clear it
+    if (pendingPhotoBlob) {
+      setPhotoPreview(null);
+      setPendingPhotoBlob(null);
+      return;
+    }
 
     setIsDeletingPhoto(true);
     setPhotoError(null);
@@ -125,11 +93,8 @@ export default function ProfilePage() {
         headers: { Authorization: `Bearer ${idToken}` },
       });
 
-      if (!res.ok) {
-        throw new Error("Delete failed");
-      }
+      if (!res.ok) throw new Error("Delete failed");
 
-      // Update local auth state
       await updateUserProfile({ photoURL: "" });
       setPhotoPreview(null);
       showToast("success", t.toast.photoDeleted);
@@ -142,16 +107,60 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
-    if (!displayName.trim()) return;
     setIsSaving(true);
     try {
-      await updateUserProfile({ displayName: displayName.trim() });
-      showToast("success", t.toast.nameSaved);
+      // Upload pending photo if any
+      if (pendingPhotoBlob) {
+        const idToken = await getIdToken();
+        if (!idToken) throw new Error("Not authenticated");
+
+        const formData = new FormData();
+        formData.append("avatar", pendingPhotoBlob, "avatar.jpg");
+
+        const res = await fetch("/api/avatar", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${idToken}` },
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Upload failed");
+        }
+
+        const { photoURL } = await res.json();
+        await updateUserProfile({ photoURL });
+        setPhotoPreview(null);
+        setPendingPhotoBlob(null);
+      }
+
+      // Update name if changed
+      if (hasNameChange && displayName.trim()) {
+        await updateUserProfile({ displayName: displayName.trim() });
+      }
+
+      showToast("success", t.toast.profileSaved);
     } catch {
       showToast("error", t.profile.saveFailed);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleBack = () => {
+    if (hasUnsavedChanges) {
+      setShowDiscardConfirm(true);
+    } else {
+      router.back();
+    }
+  };
+
+  const handleDiscard = () => {
+    setShowDiscardConfirm(false);
+    setPhotoPreview(null);
+    setPendingPhotoBlob(null);
+    setDisplayName(profile?.displayName || "");
+    router.back();
   };
 
   const handleSignOut = async () => {
@@ -173,7 +182,7 @@ export default function ProfilePage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <PageHeader title={t.profile.title} showBack />
+      <PageHeader title={t.profile.title} showBack onBack={handleBack} />
 
       <div className="flex-1 p-4 space-y-6">
         {/* Avatar */}
@@ -202,15 +211,10 @@ export default function ProfilePage() {
                 // Prevent releasePointerCapture error from motion/draggable
                 e.stopPropagation();
               }}
-              disabled={isUploadingPhoto}
-              className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center disabled:opacity-50"
+              className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center"
               style={{ touchAction: "manipulation" }}
             >
-              {isUploadingPhoto ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Camera className="h-3.5 w-3.5" />
-              )}
+              <Camera className="h-3.5 w-3.5" />
             </button>
 
             {/* Hidden file input */}
@@ -224,7 +228,7 @@ export default function ProfilePage() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            {isUploadingPhoto ? t.profile.uploading : t.profile.photoHint}
+            {pendingPhotoBlob ? t.profile.photoReady : t.profile.photoHint}
           </p>
           <p className="text-[10px] text-muted-foreground/60">
             {t.profile.photoMaxSize}
@@ -236,7 +240,7 @@ export default function ProfilePage() {
           )}
 
           {/* Delete photo button */}
-          {profile?.photoURL && !isUploadingPhoto && (
+          {(profile?.photoURL || pendingPhotoBlob) && (
             <button
               onClick={handleDeletePhoto}
               disabled={isDeletingPhoto}
@@ -283,9 +287,7 @@ export default function ProfilePage() {
         {/* Save button */}
         <button
           onClick={handleSave}
-          disabled={
-            isSaving || displayName.trim() === (profile?.displayName || "")
-          }
+          disabled={isSaving || !hasUnsavedChanges}
           className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {isSaving ? (
@@ -326,6 +328,18 @@ export default function ProfilePage() {
         onCancel={() => setShowSignOutConfirm(false)}
         danger
         isLoading={isSigningOut}
+      />
+
+      {/* Discard Changes Confirmation */}
+      <ConfirmationDialog
+        open={showDiscardConfirm}
+        title={t.profile.discardTitle}
+        message={t.profile.discardMessage}
+        confirmLabel={t.profile.discard}
+        cancelLabel={t.profile.continueEditing}
+        onConfirm={handleDiscard}
+        onCancel={() => setShowDiscardConfirm(false)}
+        danger
       />
 
       {/* Photo Crop Dialog */}

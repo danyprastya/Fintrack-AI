@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { CategoryIcon } from "@/lib/category-icons";
 import { Search, Plus, X } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
 import { useNavbar } from "@/contexts/navbar-context";
@@ -34,18 +35,18 @@ type FilterType = "all" | "income" | "expense" | "transfer";
 
 // Default categories for the add form
 const CATEGORIES = [
-  { name: "foodDrinks", icon: "🍔", type: "expense" },
-  { name: "transportation", icon: "🚗", type: "expense" },
-  { name: "shopping", icon: "🛍️", type: "expense" },
-  { name: "entertainment", icon: "🎬", type: "expense" },
-  { name: "bills", icon: "📄", type: "expense" },
-  { name: "health", icon: "💊", type: "expense" },
-  { name: "education", icon: "📚", type: "expense" },
-  { name: "salary", icon: "💰", type: "income" },
-  { name: "investment", icon: "📈", type: "income" },
-  { name: "freelance", icon: "💻", type: "income" },
-  { name: "gift", icon: "🎁", type: "income" },
-  { name: "others", icon: "📦", type: "both" },
+  { name: "foodDrinks", icon: "foodDrinks", type: "expense" },
+  { name: "transportation", icon: "transportation", type: "expense" },
+  { name: "shopping", icon: "shopping", type: "expense" },
+  { name: "entertainment", icon: "entertainment", type: "expense" },
+  { name: "bills", icon: "bills", type: "expense" },
+  { name: "health", icon: "health", type: "expense" },
+  { name: "education", icon: "education", type: "expense" },
+  { name: "salary", icon: "salary", type: "income" },
+  { name: "investment", icon: "investment", type: "income" },
+  { name: "freelance", icon: "freelance", type: "income" },
+  { name: "gift", icon: "gift", type: "income" },
+  { name: "others", icon: "others", type: "both" },
 ] as const;
 
 export default function TransactionsPage() {
@@ -126,7 +127,7 @@ export default function TransactionsPage() {
         amount,
         description: addDesc,
         category: addCategory,
-        categoryIcon: cat?.icon || "📦",
+        categoryIcon: cat?.icon || "others",
         walletId: addWalletId || undefined,
         date: Timestamp.now(),
         source: "manual",
@@ -302,7 +303,10 @@ export default function TransactionsPage() {
                       : "bg-muted text-muted-foreground",
                   )}
                 >
-                  {c.icon} {c.name}
+                  <span className="inline-flex items-center gap-1">
+                    <CategoryIcon icon={c.icon} className="h-3.5 w-3.5" />{" "}
+                    {c.name}
+                  </span>
                 </button>
               ))}
             </div>

@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useNotifications } from "@/contexts/notification-context";
 import { BalanceCard } from "@/components/dashboard/balance-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
+import { BudgetCategorySlider } from "@/components/dashboard/budget-category-slider";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 import { BudgetProgress } from "@/components/dashboard/budget-progress";
 import { CurrencyConverterWidget } from "@/components/dashboard/currency-converter-widget";
@@ -97,7 +98,7 @@ export default function DashboardPage() {
               amount: tx.amount,
               description: tx.description,
               category: tx.category || "others",
-              categoryIcon: tx.categoryIcon || "📦",
+              categoryIcon: tx.categoryIcon || "others",
               date: d.toLocaleTimeString("id-ID", {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -187,10 +188,15 @@ export default function DashboardPage() {
         totalBalance={totalBalance}
         income={monthlyIncome}
         expense={monthlyExpense}
+        userName={userName}
+        budgetLimit={budgets.reduce((sum, b) => sum + b.limit, 0) || undefined}
       />
 
       {/* Quick Actions */}
       <QuickActions />
+
+      {/* Budget Category Slider */}
+      <BudgetCategorySlider budgets={budgets} />
 
       {/* Currency Converter */}
       <CurrencyConverterWidget />

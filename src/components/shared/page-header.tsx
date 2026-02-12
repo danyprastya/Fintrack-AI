@@ -8,6 +8,7 @@ interface PageHeaderProps {
   title: string;
   subtitle?: string;
   showBack?: boolean;
+  onBack?: () => void;
   rightAction?: React.ReactNode;
   className?: string;
 }
@@ -16,6 +17,7 @@ export function PageHeader({
   title,
   subtitle,
   showBack,
+  onBack,
   rightAction,
   className,
 }: PageHeaderProps) {
@@ -32,7 +34,7 @@ export function PageHeader({
         <div className="flex items-center gap-2 min-w-0">
           {showBack && (
             <button
-              onClick={() => router.back()}
+              onClick={onBack || (() => router.back())}
               className="flex items-center justify-center -ml-2 h-9 w-9 rounded-full hover:bg-muted transition-colors"
               aria-label="Back"
             >

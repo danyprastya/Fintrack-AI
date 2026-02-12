@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
 import { formatCurrency, calculatePercentage } from "@/lib/utils/currency";
 import { Progress } from "@/components/ui/progress";
+import { CategoryIcon } from "@/lib/category-icons";
+import { BarChart3 } from "lucide-react";
 
 interface BudgetItem {
   id: string;
@@ -39,7 +41,7 @@ export function BudgetProgress({
 
       {budgets.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-          <span className="text-3xl mb-2">📋</span>
+          <BarChart3 className="h-8 w-8 mb-2 text-muted-foreground/50" />
           <p className="text-sm font-medium">{t.emptyState.noBudgets}</p>
           <p className="text-xs text-muted-foreground/70 mt-0.5">
             {t.emptyState.noBudgetsDesc}
@@ -56,7 +58,12 @@ export function BudgetProgress({
               <div key={budget.id} className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <span className="text-base">{budget.categoryIcon}</span>
+                    <div className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center">
+                      <CategoryIcon
+                        icon={budget.categoryIcon}
+                        className="h-3.5 w-3.5 text-muted-foreground"
+                      />
+                    </div>
                     <span className="font-medium">{budget.categoryName}</span>
                   </div>
                   <span className="text-muted-foreground">

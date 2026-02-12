@@ -4,6 +4,8 @@ import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
 import { formatCurrency } from "@/lib/utils/currency";
+import { CategoryIcon } from "@/lib/category-icons";
+import { BarChart3 } from "lucide-react";
 
 interface CategorySpending {
   id: string;
@@ -17,6 +19,7 @@ interface CategorySpending {
 interface SpendingRingsProps {
   categories: CategorySpending[];
   totalSpending: number;
+  type?: "income" | "expense";
   currency?: string;
   className?: string;
 }
@@ -119,6 +122,7 @@ function CircleProgress({ data, index }: { data: RingData; index: number }) {
 export function SpendingRings({
   categories,
   totalSpending,
+  type = "expense",
   currency = "IDR",
   className,
 }: SpendingRingsProps) {
@@ -140,7 +144,7 @@ export function SpendingRings({
   if (categories.length === 0) {
     return (
       <div className={cn("text-center py-8 text-muted-foreground", className)}>
-        <p className="text-3xl mb-2">📊</p>
+        <BarChart3 className="h-8 w-8 mb-2 text-muted-foreground/50" />
         <p className="text-sm">{t.analytics.noData}</p>
       </div>
     );
@@ -157,7 +161,9 @@ export function SpendingRings({
           {/* Center total */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              {t.analytics.totalExpense}
+              {type === "income"
+                ? t.analytics.totalIncome
+                : t.analytics.totalExpense}
             </p>
             <motion.p
               className="text-sm font-bold"
@@ -184,8 +190,12 @@ export function SpendingRings({
                 style={{ backgroundColor: cat.color }}
               />
               <div className="min-w-0">
-                <p className="text-xs text-muted-foreground truncate leading-tight">
-                  {cat.icon} {cat.name}
+                <p className="text-xs text-muted-foreground truncate leading-tight flex items-center gap-1">
+                  <CategoryIcon
+                    icon={cat.icon || cat.name}
+                    className="h-3 w-3"
+                  />{" "}
+                  {cat.name}
                 </p>
                 <p
                   className="text-sm font-semibold leading-tight"
@@ -212,8 +222,11 @@ export function SpendingRings({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.5 + i * 0.05 }}
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-base">
-              {cat.icon}
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted">
+              <CategoryIcon
+                icon={cat.icon || cat.name}
+                className="h-4.5 w-4.5 text-muted-foreground"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">

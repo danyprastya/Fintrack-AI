@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
 import { formatCurrency } from "@/lib/utils/currency";
+import { CategoryIcon } from "@/lib/category-icons";
 
 interface CategorySpending {
   id: string;
@@ -86,8 +87,11 @@ export function SpendingChart({
       <div className="space-y-3">
         {categories.map((cat) => (
           <div key={cat.id} className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-base">
-              {cat.icon}
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
+              <CategoryIcon
+                icon={cat.icon || cat.name}
+                className="h-4.5 w-4.5 text-muted-foreground"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">

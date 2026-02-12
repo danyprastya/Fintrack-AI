@@ -153,6 +153,13 @@ export interface Translations {
     exporting: string;
     downloadCsv: string;
     googleAuthInfo: string;
+    editWallet: string;
+    deleteWalletTitle: string;
+    deleteWalletConfirm: string;
+    customCategories: string;
+    addCategory: string;
+    categoryName: string;
+    walletColor: string;
   };
 
   // Login / Auth
@@ -213,6 +220,12 @@ export interface Translations {
     deletePhotoFailed: string;
     saveFailed: string;
     signOutFailed: string;
+    unsupportedFormat: string;
+    photoReady: string;
+    discardTitle: string;
+    discardMessage: string;
+    discard: string;
+    continueEditing: string;
   };
 
   // Telegram Link

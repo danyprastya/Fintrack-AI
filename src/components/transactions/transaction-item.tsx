@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/currency";
+import { CategoryIcon } from "@/lib/category-icons";
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -51,8 +52,11 @@ export function TransactionItem({
         className,
       )}
     >
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted text-lg">
-        {categoryIcon}
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted">
+        <CategoryIcon
+          icon={categoryIcon || categoryName}
+          className="h-5 w-5 text-muted-foreground"
+        />
       </div>
 
       <div className="flex-1 min-w-0">

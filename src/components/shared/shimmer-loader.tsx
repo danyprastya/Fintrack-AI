@@ -13,15 +13,11 @@ interface ShimmerProps {
  */
 
 export function ShimmerLine({ className }: ShimmerProps) {
-  return (
-    <div className={cn("shimmer h-4 w-full rounded-md", className)} />
-  );
+  return <div className={cn("shimmer h-4 w-full rounded-md", className)} />;
 }
 
 export function ShimmerCircle({ className }: ShimmerProps) {
-  return (
-    <div className={cn("shimmer h-10 w-10 rounded-full", className)} />
-  );
+  return <div className={cn("shimmer h-10 w-10 rounded-full", className)} />;
 }
 
 export function ShimmerCard({ className }: ShimmerProps) {

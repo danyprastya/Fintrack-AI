@@ -52,6 +52,7 @@ export interface WalletDoc {
   type: "cash" | "bank" | "ewallet";
   balance: number;
   icon: string;
+  color?: string;
   isDefault?: boolean;
   createdAt: Timestamp;
 }
@@ -81,8 +82,23 @@ export async function updateWallet(
   await updateDoc(doc(db(), "wallets", walletId), data);
 }
 
-export async function deleteWallet(walletId: string): Promise<void> {
-  await deleteDoc(doc(db(), "wallets", walletId));
+export async function deleteWallet(walletId: string, userId: string): Promise<void> {
+  const firestore = db();
+
+  // Delete all transactions linked to this wallet AND owned by this user
+  const txQuery = query(
+    collection(firestore, "transactions"),
+    where("walletId", "==", walletId),
+    where("userId", "==", userId),
+  );
+  const txSnapshot = await getDocs(txQuery);
+  const batch = txSnapshot.docs.map((d) =>
+    deleteDoc(doc(firestore, "transactions", d.id)),
+  );
+  await Promise.all(batch);
+
+  // Delete the wallet itself
+  await deleteDoc(doc(firestore, "wallets", walletId));
 }
 
 // ============================================================
@@ -262,6 +278,38 @@ export async function deleteBudget(budgetId: string): Promise<void> {
 }
 
 // ============================================================
+// CUSTOM CATEGORIES
+// ============================================================
+
+export interface CustomCategoryDoc {
+  id: string;
+  userId: string;
+  name: string;
+  icon: string;
+  type: "income" | "expense" | "both";
+}
+
+export async function getCustomCategories(
+  userId: string,
+): Promise<CustomCategoryDoc[]> {
+  return queryDocuments<CustomCategoryDoc>(
+    "customCategories",
+    where("userId", "==", userId),
+  );
+}
+
+export async function createCustomCategory(
+  data: Omit<CustomCategoryDoc, "id">,
+): Promise<string> {
+  const docRef = await addDoc(collection(db(), "customCategories"), data);
+  return docRef.id;
+}
+
+export async function deleteCustomCategory(id: string): Promise<void> {
+  await deleteDoc(doc(db(), "customCategories", id));
+}
+
+// ============================================================
 // AGGREGATION HELPERS (client-side)
 // ============================================================
 
@@ -320,7 +368,7 @@ export function groupTransactionsByDate(
       type: tx.type,
       amount: tx.amount,
       description: tx.description,
-      categoryIcon: tx.categoryIcon || "📦",
+      categoryIcon: tx.categoryIcon || "others",
       categoryName: tx.category || "others",
       date: timeStr,
       dateGroup: dateStr,
@@ -344,7 +392,7 @@ export function computeCategorySpending(
     if (d.getMonth() + 1 !== month || d.getFullYear() !== year) continue;
 
     const key = tx.category || "others";
-    const existing = map.get(key) || { icon: tx.categoryIcon || "📦", amount: 0 };
+    const existing = map.get(key) || { icon: tx.categoryIcon || key, amount: 0 };
     existing.amount += tx.amount;
     map.set(key, existing);
   }
