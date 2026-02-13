@@ -179,9 +179,10 @@ export function WalletSection({
 
   useEffect(() => {
     if (editWallet) {
+      const prev = document.body.style.overflow;
       document.body.style.overflow = "hidden";
       return () => {
-        document.body.style.overflow = "";
+        document.body.style.overflow = prev;
       };
     }
   }, [editWallet]);
@@ -191,11 +192,12 @@ export function WalletSection({
     setIsSaving(true);
     try {
       const initialBalance = parseFloat(balance) || 0;
+      // Create wallet with balance 0; the income transaction below will set it
       const walletId = await createWallet({
         userId: user.uid,
         name: name.trim(),
         type,
-        balance: initialBalance,
+        balance: 0,
         icon: type,
         color: selectedColor,
       });
@@ -399,7 +401,7 @@ export function WalletSection({
             if (e.target === e.currentTarget) closeEditSheet();
           }}
         >
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/50" />
 
           <div className="relative w-full max-w-lg bg-background rounded-t-2xl p-5 space-y-4 animate-in slide-in-from-bottom duration-300">
             <div className="flex items-center justify-between">
@@ -507,7 +509,7 @@ export function WalletSection({
                 if (e.target === e.currentTarget) setShowColorPicker(false);
               }}
             >
-              <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
+              <div className="absolute inset-0 bg-black/30" />
               <div className="relative w-full max-w-lg bg-background rounded-t-2xl p-5 space-y-4 animate-in slide-in-from-bottom duration-200">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold">

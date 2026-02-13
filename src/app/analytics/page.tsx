@@ -30,7 +30,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function AnalyticsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const [period, setPeriod] = useState<Period>("monthly");
   const [filterType, setFilterType] = useState<FilterType>("all");
@@ -77,6 +77,34 @@ export default function AnalyticsPage() {
       document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [user?.uid]);
+
+  // Compute readable date range label
+  const dateRangeLabel = useMemo(() => {
+    const now = new Date();
+    const locale = language === "id" ? "id-ID" : "en-US";
+
+    if (period === "weekly") {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const from = weekAgo.toLocaleDateString(locale, {
+        day: "numeric",
+        month: "short",
+      });
+      const to = now.toLocaleDateString(locale, {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      return `${from} – ${to}`;
+    } else if (period === "monthly") {
+      return now.toLocaleDateString(locale, {
+        month: "long",
+        year: "numeric",
+      });
+    } else {
+      return now.getFullYear().toString();
+    }
+  }, [period, language]);
 
   // Compute analytics data based on selected period
   const { totalIncome, totalExpense, categoryData, totalCategoryAmount } =
@@ -157,36 +185,6 @@ export default function AnalyticsPage() {
 
   const hasData = totalIncome > 0 || totalExpense > 0;
 
-  // Compute date range label
-  const dateRangeLabel = useMemo(() => {
-    const now = new Date();
-    const monthNames = [
-      t.months.jan,
-      t.months.feb,
-      t.months.mar,
-      t.months.apr,
-      t.months.may,
-      t.months.jun,
-      t.months.jul,
-      t.months.aug,
-      t.months.sep,
-      t.months.oct,
-      t.months.nov,
-      t.months.dec,
-    ];
-
-    if (period === "weekly") {
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      const fmt = (d: Date) => `${d.getDate()} ${monthNames[d.getMonth()]}`;
-      return `${fmt(weekAgo)} – ${fmt(now)} ${now.getFullYear()}`;
-    } else if (period === "yearly") {
-      return `${now.getFullYear()}`;
-    } else {
-      return `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
-    }
-  }, [period, t.months]);
-
   return (
     <div className="flex flex-col min-h-screen">
       <PageHeader title={t.analytics.title} />
@@ -209,10 +207,12 @@ export default function AnalyticsPage() {
             </button>
           ))}
         </div>
+
         {/* Date Range Label */}
-        <p className="text-center text-xs text-muted-foreground font-medium -mt-3">
+        <p className="text-left text-sm font-medium text-muted-foreground -mt-2">
           {dateRangeLabel}
         </p>
+
         {/* Summary Cards */}
         <SummaryCards totalIncome={totalIncome} totalExpense={totalExpense} />
 
@@ -277,7 +277,6 @@ export default function AnalyticsPage() {
                   <SpendingRings
                     categories={categoryData}
                     totalSpending={totalCategoryAmount}
-                    type={filterType as "income" | "expense"}
                   />
                 </>
               )}

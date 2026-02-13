@@ -31,9 +31,10 @@ export function BottomSheet({
   // Lock body scroll when open
   useEffect(() => {
     if (open) {
+      const prev = document.body.style.overflow;
       document.body.style.overflow = "hidden";
       return () => {
-        document.body.style.overflow = "";
+        document.body.style.overflow = prev;
       };
     }
   }, [open]);
@@ -47,8 +48,8 @@ export function BottomSheet({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      {/* Backdrop with blur */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50" />
 
       {/* Sheet */}
       <div

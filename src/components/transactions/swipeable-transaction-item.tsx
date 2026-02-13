@@ -34,8 +34,9 @@ const TYPE_STYLES = {
   transfer: { color: "text-transfer", prefix: "", Icon: ArrowLeftRight },
 };
 
-const SWIPE_THRESHOLD = 40;
-const MAX_SWIPE = 110; // Width of both buttons combined (72px each)
+const SWIPE_THRESHOLD = 30;
+const BUTTON_WIDTH = 64; // Each button width in px
+const MAX_SWIPE = BUTTON_WIDTH * 2; // Width of both buttons combined
 
 export function SwipeableTransactionItem({
   id,
@@ -56,17 +57,21 @@ export function SwipeableTransactionItem({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef(0);
+  const startYRef = useRef(0);
   const currentXRef = useRef(0);
   const [offsetX, setOffsetX] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
   const isDraggingRef = useRef(false);
+  const directionLockedRef = useRef<"h" | "v" | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       startXRef.current = e.touches[0].clientX;
+      startYRef.current = e.touches[0].clientY;
       currentXRef.current = isRevealed ? -MAX_SWIPE : 0;
       isDraggingRef.current = true;
+      directionLockedRef.current = null;
       setIsDragging(true);
     },
     [isRevealed],
@@ -74,10 +79,25 @@ export function SwipeableTransactionItem({
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isDraggingRef.current) return;
-    const diff = e.touches[0].clientX - startXRef.current;
+
+    const dx = e.touches[0].clientX - startXRef.current;
+    const dy = e.touches[0].clientY - startYRef.current;
+
+    // Lock direction after 5px of movement
+    if (!directionLockedRef.current) {
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        directionLockedRef.current = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+      }
+      return;
+    }
+
+    // Only handle horizontal swipes
+    if (directionLockedRef.current === "v") return;
+
+    e.preventDefault();
     const newOffset = Math.min(
       0,
-      Math.max(-MAX_SWIPE, currentXRef.current + diff),
+      Math.max(-MAX_SWIPE, currentXRef.current + dx),
     );
     setOffsetX(newOffset);
   }, []);
@@ -145,13 +165,14 @@ export function SwipeableTransactionItem({
       className={cn("relative overflow-hidden rounded-2xl", className)}
     >
       {/* Action buttons behind */}
-      <div className="absolute right-0 top-0 bottom-0 flex mr-1 items-stretch z-0">
+      <div className="absolute right-0 top-0 bottom-0 mr-1 flex items-stretch z-0">
         <button
           onClick={() => {
             closeSwipe();
             onEdit?.(id);
           }}
-          className="flex items-center justify-center w-[15vw] bg-primary text-primary-foreground gap-1 flex-col"
+          className="flex items-center justify-center bg-primary text-primary-foreground gap-1 flex-col"
+          style={{ width: BUTTON_WIDTH }}
         >
           <Pencil className="h-4 w-4" />
           <span className="text-[10px] font-medium leading-tight">
@@ -163,7 +184,8 @@ export function SwipeableTransactionItem({
             closeSwipe();
             onDelete?.(id);
           }}
-          className="flex items-center justify-center rounded-r-2xl w-[15vw] bg-destructive text-white gap-1 flex-col"
+          className="flex items-center justify-center rounded-r-2xl bg-destructive text-white gap-1 flex-col"
+          style={{ width: BUTTON_WIDTH }}
         >
           <Trash2 className="h-4 w-4" />
           <span className="text-[10px] font-medium leading-tight">
@@ -174,10 +196,10 @@ export function SwipeableTransactionItem({
 
       {/* Foreground row */}
       <div
-        className="relative z-10 bg-card flex items-center gap-3 p-3 rounded-2xl border border-border/60 shadow-sm transition-transform duration-200 ease-out select-none touch-pan-y"
+        className="relative z-10 bg-card flex items-center gap-3 p-3 rounded-2xl border border-border/60 shadow-sm select-none"
         style={{
           transform: `translateX(${offsetX}px)`,
-          transition: isDragging ? "none" : undefined,
+          transition: isDragging ? "none" : "transform 0.25s ease-out",
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

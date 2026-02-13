@@ -85,17 +85,24 @@ export async function updateWallet(
 export async function deleteWallet(walletId: string, userId: string): Promise<void> {
   const firestore = db();
 
-  // Delete all transactions linked to this wallet AND owned by this user
+  // Query by userId (required by Firestore security rules) then filter walletId client-side
+  // This avoids composite index requirement while satisfying rules
   const txQuery = query(
     collection(firestore, "transactions"),
-    where("walletId", "==", walletId),
     where("userId", "==", userId),
   );
   const txSnapshot = await getDocs(txQuery);
-  const batch = txSnapshot.docs.map((d) =>
-    deleteDoc(doc(firestore, "transactions", d.id)),
+  const walletTxDocs = txSnapshot.docs.filter(
+    (d) => d.data().walletId === walletId,
   );
-  await Promise.all(batch);
+
+  // Delete linked transactions in small batches
+  for (let i = 0; i < walletTxDocs.length; i += 10) {
+    const chunk = walletTxDocs.slice(i, i + 10);
+    await Promise.all(
+      chunk.map((d) => deleteDoc(doc(firestore, "transactions", d.id))),
+    );
+  }
 
   // Delete the wallet itself
   await deleteDoc(doc(firestore, "wallets", walletId));
@@ -262,7 +269,10 @@ export async function getBudgets(
 export async function createBudget(
   data: Omit<BudgetDoc, "id">,
 ): Promise<string> {
-  const docRef = await addDoc(collection(db(), "budgets"), data);
+  const docRef = await addDoc(collection(db(), "budgets"), {
+    ...data,
+    createdAt: Timestamp.now(),
+  });
   return docRef.id;
 }
 
@@ -274,6 +284,7 @@ export async function updateBudget(
 }
 
 export async function deleteBudget(budgetId: string): Promise<void> {
+  // Security rules verify ownership via resource.data.userId
   await deleteDoc(doc(db(), "budgets", budgetId));
 }
 
@@ -306,6 +317,7 @@ export async function createCustomCategory(
 }
 
 export async function deleteCustomCategory(id: string): Promise<void> {
+  // Security rules verify ownership via resource.data.userId
   await deleteDoc(doc(db(), "customCategories", id));
 }
 

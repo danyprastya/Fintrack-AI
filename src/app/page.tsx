@@ -7,14 +7,11 @@ import { useNotifications } from "@/contexts/notification-context";
 import { BalanceCard } from "@/components/dashboard/balance-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { BudgetCategorySlider } from "@/components/dashboard/budget-category-slider";
+import { WalletSlider } from "@/components/dashboard/wallet-slider";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 import { BudgetProgress } from "@/components/dashboard/budget-progress";
 import { CurrencyConverterWidget } from "@/components/dashboard/currency-converter-widget";
 import { ShimmerDashboard } from "@/components/shared/shimmer-loader";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
 import {
   getWallets,
   getRecentTransactions,
@@ -22,6 +19,7 @@ import {
   computeTotalBalance,
   computeMonthlyTotals,
   type BudgetDoc,
+  type WalletDoc,
 } from "@/lib/firestore-service";
 
 export default function DashboardPage() {
@@ -55,6 +53,15 @@ export default function DashboardPage() {
       color: string;
     }[]
   >([]);
+  const [walletList, setWalletList] = useState<
+    {
+      id: string;
+      name: string;
+      type: "cash" | "bank" | "ewallet";
+      balance: number;
+      color?: string;
+    }[]
+  >([]);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -77,6 +84,17 @@ export default function DashboardPage() {
 
         // Balance from wallets
         setTotalBalance(computeTotalBalance(wallets));
+
+        // Save wallet list for slider
+        setWalletList(
+          wallets.map((w) => ({
+            id: w.id,
+            name: w.name,
+            type: w.type,
+            balance: w.balance,
+            color: w.color,
+          })),
+        );
 
         // Monthly totals from recent transactions (fetch more for full month)
         const { income, expense } = computeMonthlyTotals(
@@ -135,77 +153,39 @@ export default function DashboardPage() {
   }
 
   const userName = profile?.displayName || t.dashboard.greeting;
-  const initials = userName.charAt(0).toUpperCase();
 
   return (
-    <div className="space-y-6 p-4">
-      {/* Top Bar: Avatar + App Branding + Notification */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/profile">
-            <Avatar className="h-10 w-10 border-2 border-primary/20 shadow-sm">
-              {profile?.photoURL ? (
-                <AvatarImage src={profile.photoURL} alt={userName} />
-              ) : null}
-              <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
-          <div>
-            <p className="text-xs text-muted-foreground">
-              {t.dashboard.greeting}, {userName}! 👋
-            </p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <Image
-                src="/icons/icon-192.svg"
-                alt="FinTrack AI"
-                width={18}
-                height={18}
-                className="h-4.5 w-4.5"
-              />
-              <span className="text-sm font-bold text-foreground">
-                FinTrack AI
-              </span>
-            </div>
-          </div>
-        </div>
-        <Link
-          href="/notifications"
-          className="relative h-10 w-10 rounded-xl bg-muted/80 flex items-center justify-center hover:bg-muted transition-colors"
-        >
-          <Bell className="h-4.5 w-4.5 text-muted-foreground" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-4.5 min-w-4.5 px-1 rounded-full bg-destructive text-[9px] font-bold text-white flex items-center justify-center">
-              {unreadCount}
-            </span>
-          )}
-        </Link>
-      </div>
-
-      {/* Balance Card */}
+    <div className="space-y-6">
+      {/* Full-bleed Balance Hero Card (includes header) */}
       <BalanceCard
         totalBalance={totalBalance}
         income={monthlyIncome}
         expense={monthlyExpense}
         userName={userName}
         budgetLimit={budgets.reduce((sum, b) => sum + b.limit, 0) || undefined}
+        photoURL={profile?.photoURL}
+        unreadCount={unreadCount}
       />
 
-      {/* Quick Actions */}
-      <QuickActions />
+      <div className="space-y-6 px-4">
+        {/* Quick Actions */}
+        <QuickActions />
 
-      {/* Budget Category Slider */}
-      <BudgetCategorySlider budgets={budgets} />
+        {/* Wallet Slider */}
+        <WalletSlider wallets={walletList} />
 
-      {/* Currency Converter */}
-      <CurrencyConverterWidget />
+        {/* Budget Category Slider */}
+        <BudgetCategorySlider budgets={budgets} />
 
-      {/* Recent Transactions */}
-      <RecentTransactions transactions={recentTx} />
+        {/* Currency Converter */}
+        <CurrencyConverterWidget />
 
-      {/* Budget Progress */}
-      <BudgetProgress budgets={budgets} />
+        {/* Recent Transactions */}
+        <RecentTransactions transactions={recentTx} />
+
+        {/* Budget Progress */}
+        <BudgetProgress budgets={budgets} />
+      </div>
     </div>
   );
 }
