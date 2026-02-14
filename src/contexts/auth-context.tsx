@@ -33,6 +33,7 @@ interface UserProfile {
   email: string | null;
   photoURL: string | null;
   phoneNumber?: string | null;
+  currency?: string;
   createdAt?: Date;
 }
 
@@ -101,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let phoneNumber: string | null = null;
         let firestorePhotoURL: string | null = null;
         let firestoreDisplayName: string | null = null;
+        let firestoreCurrency: string | undefined;
         if (fireDb) {
           const userDoc = await getDoc(
             doc(fireDb, "users", firebaseUser.uid),
@@ -109,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             phoneNumber = userDoc.data()?.phoneNumber || null;
             firestorePhotoURL = userDoc.data()?.photoURL || null;
             firestoreDisplayName = userDoc.data()?.displayName || null;
+            firestoreCurrency = userDoc.data()?.currency || undefined;
           }
         }
 
@@ -120,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Prefer Firestore photoURL (Cloudflare R2) over Auth photoURL
           photoURL: firestorePhotoURL || firebaseUser.photoURL,
           phoneNumber: phoneNumber || firebaseUser.phoneNumber,
+          currency: firestoreCurrency,
         });
         await syncUserToFirestore(firebaseUser);
       } else {

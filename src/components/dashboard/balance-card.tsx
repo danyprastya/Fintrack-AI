@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
-import { formatCurrency } from "@/lib/utils/currency";
+import { formatCurrency, formatCurrencyParts } from "@/lib/utils/currency";
 import {
   Eye,
   EyeOff,
@@ -25,6 +25,7 @@ interface BalanceCardProps {
   budgetLimit?: number;
   photoURL?: string | null;
   unreadCount?: number;
+  onToggleHidden?: (hidden: boolean) => void;
   className?: string;
 }
 
@@ -37,13 +38,29 @@ export function BalanceCard({
   budgetLimit,
   photoURL,
   unreadCount = 0,
+  onToggleHidden,
   className,
 }: BalanceCardProps) {
   const { t } = useLanguage();
   const [isHidden, setIsHidden] = useState(false);
 
-  const masked = "••••••••";
+  const masked = "------";
   const initials = (userName || "U").charAt(0).toUpperCase();
+
+  const toggleHidden = () => {
+    const next = !isHidden;
+    setIsHidden(next);
+    onToggleHidden?.(next);
+  };
+
+  /** Format amount showing symbol always, masking only the numeric value */
+  const displayAmount = (amount: number) => {
+    if (isHidden) {
+      const { symbol } = formatCurrencyParts(amount, currency);
+      return `${symbol} ${masked}`;
+    }
+    return formatCurrency(amount, currency);
+  };
 
   // Budget comparison badge
   const budgetPercent =
@@ -86,13 +103,13 @@ export function BalanceCard({
               <div className="flex items-center gap-1.5 mt-0.5">
                 <Image
                   src="/icons/icon-192.svg"
-                  alt="FinTrack AI"
+                  alt={t.general.appName}
                   width={18}
                   height={18}
                   className="h-4.5 w-4.5 brightness-0 invert"
                 />
                 <span className="text-sm font-bold text-white">
-                  FinTrack AI
+                  {t.general.appName}
                 </span>
               </div>
             </div>
@@ -117,10 +134,10 @@ export function BalanceCard({
           </p>
         <div className="flex flex-row gap-4 justify-start items-center">
           <p className="text-3xl font-bold tracking-tight mt-0.5">
-            {isHidden ? masked : formatCurrency(totalBalance, currency)}
+            {displayAmount(totalBalance)}
           </p>
           <button
-            onClick={() => setIsHidden(!isHidden)}
+            onClick={toggleHidden}
             className="h-6 w-6 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
           >
             {isHidden ? (
@@ -140,7 +157,7 @@ export function BalanceCard({
             <div>
               <p className="text-[10px] text-white/50">{t.dashboard.income}</p>
               <p className="text-sm font-semibold">
-                {isHidden ? masked : formatCurrency(income, currency)}
+                {displayAmount(income)}
               </p>
             </div>
           </div>
@@ -152,7 +169,7 @@ export function BalanceCard({
             <div>
               <p className="text-[10px] text-white/50">{t.dashboard.expense}</p>
               <p className="text-sm font-semibold">
-                {isHidden ? masked : formatCurrency(expense, currency)}
+                {displayAmount(expense)}
               </p>
             </div>
           </div>

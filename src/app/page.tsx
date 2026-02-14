@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/language-context";
 import { useAuth } from "@/contexts/auth-context";
 import { useNotifications } from "@/contexts/notification-context";
+import { useCurrency } from "@/contexts/currency-context";
 import { BalanceCard } from "@/components/dashboard/balance-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { BudgetCategorySlider } from "@/components/dashboard/budget-category-slider";
@@ -26,7 +27,9 @@ export default function DashboardPage() {
   const { t } = useLanguage();
   const { user, profile, isLoading: authLoading } = useAuth();
   const { unreadCount } = useNotifications();
+  const { displayCurrency, convertForDisplay } = useCurrency();
   const [isLoading, setIsLoading] = useState(true);
+  const [isBalanceHidden, setIsBalanceHidden] = useState(false);
 
   // Real data from Firestore
   const [totalBalance, setTotalBalance] = useState(0);
@@ -158,13 +161,15 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Full-bleed Balance Hero Card (includes header) */}
       <BalanceCard
-        totalBalance={totalBalance}
-        income={monthlyIncome}
-        expense={monthlyExpense}
+        totalBalance={convertForDisplay(totalBalance)}
+        income={convertForDisplay(monthlyIncome)}
+        expense={convertForDisplay(monthlyExpense)}
+        currency={displayCurrency}
         userName={userName}
-        budgetLimit={budgets.reduce((sum, b) => sum + b.limit, 0) || undefined}
+        budgetLimit={budgets.reduce((sum, b) => sum + b.limit, 0) ? convertForDisplay(budgets.reduce((sum, b) => sum + b.limit, 0)) : undefined}
         photoURL={profile?.photoURL}
         unreadCount={unreadCount}
+        onToggleHidden={setIsBalanceHidden}
       />
 
       <div className="space-y-6 px-4">
@@ -172,19 +177,32 @@ export default function DashboardPage() {
         <QuickActions />
 
         {/* Wallet Slider */}
-        <WalletSlider wallets={walletList} />
+        <WalletSlider
+          wallets={walletList.map(w => ({ ...w, balance: convertForDisplay(w.balance) }))}
+          currency={displayCurrency}
+          isHidden={isBalanceHidden}
+        />
 
         {/* Budget Category Slider */}
-        <BudgetCategorySlider budgets={budgets} />
+        <BudgetCategorySlider
+          budgets={budgets.map(b => ({ ...b, spent: convertForDisplay(b.spent), limit: convertForDisplay(b.limit) }))}
+          currency={displayCurrency}
+        />
 
         {/* Currency Converter */}
         <CurrencyConverterWidget />
 
         {/* Recent Transactions */}
-        <RecentTransactions transactions={recentTx} />
+        <RecentTransactions
+          transactions={recentTx.map(tx => ({ ...tx, amount: convertForDisplay(tx.amount) }))}
+          currency={displayCurrency}
+        />
 
         {/* Budget Progress */}
-        <BudgetProgress budgets={budgets} />
+        <BudgetProgress
+          budgets={budgets.map(b => ({ ...b, spent: convertForDisplay(b.spent), limit: convertForDisplay(b.limit) }))}
+          currency={displayCurrency}
+        />
       </div>
     </div>
   );

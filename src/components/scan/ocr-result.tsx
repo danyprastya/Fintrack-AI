@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
+import { useCurrency } from "@/contexts/currency-context";
 import { formatCurrency } from "@/lib/utils/currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ export function OCRResult({
   className,
 }: OCRResultProps) {
   const { t } = useLanguage();
+  const { displayCurrency, convertForDisplay } = useCurrency();
 
   return (
     <Card className={cn("border-primary/20", className)}>
@@ -53,7 +55,7 @@ export function OCRResult({
             </label>
             <div className="mt-1 p-3 rounded-xl bg-primary/5 border border-primary/20">
               <p className="text-xl font-bold text-primary">
-                {total ? formatCurrency(total) : "-"}
+                {total ? formatCurrency(convertForDisplay(total), displayCurrency) : "-"}
               </p>
             </div>
           </div>

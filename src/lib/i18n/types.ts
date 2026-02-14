@@ -390,4 +390,23 @@ export interface Translations {
     nov: string;
     dec: string;
   };
+
+  // Currency names for converter
+  currencyNames: {
+    USD: string;
+    IDR: string;
+    EUR: string;
+    GBP: string;
+    JPY: string;
+    SGD: string;
+    MYR: string;
+    THB: string;
+    AUD: string;
+    CNY: string;
+    KRW: string;
+    INR: string;
+    PHP: string;
+    VND: string;
+    SAR: string;
+  };
 }

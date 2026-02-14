@@ -27,23 +27,23 @@ const BASE_RATES: Record<string, number> = {
 
 const CURRENCY_INFO: Record<
   string,
-  { flag: string; symbol: string; name: string; nameEn: string }
+  { flag: string; symbol: string }
 > = {
-  USD: { flag: "🇺🇸", symbol: "$", name: "Dolar AS", nameEn: "US Dollar" },
-  IDR: { flag: "🇮🇩", symbol: "Rp", name: "Rupiah", nameEn: "Rupiah" },
-  EUR: { flag: "🇪🇺", symbol: "€", name: "Euro", nameEn: "Euro" },
-  GBP: { flag: "🇬🇧", symbol: "£", name: "Pound", nameEn: "Pound" },
-  JPY: { flag: "🇯🇵", symbol: "¥", name: "Yen", nameEn: "Yen" },
-  SGD: { flag: "🇸🇬", symbol: "S$", name: "SGD", nameEn: "SGD" },
-  MYR: { flag: "🇲🇾", symbol: "RM", name: "Ringgit", nameEn: "Ringgit" },
-  THB: { flag: "🇹🇭", symbol: "฿", name: "Baht", nameEn: "Baht" },
-  AUD: { flag: "🇦🇺", symbol: "A$", name: "AUD", nameEn: "AUD" },
-  CNY: { flag: "🇨🇳", symbol: "¥", name: "Yuan", nameEn: "Yuan" },
-  KRW: { flag: "🇰🇷", symbol: "₩", name: "Won", nameEn: "Won" },
-  INR: { flag: "🇮🇳", symbol: "₹", name: "Rupee", nameEn: "Rupee" },
-  PHP: { flag: "🇵🇭", symbol: "₱", name: "Peso", nameEn: "Peso" },
-  VND: { flag: "🇻🇳", symbol: "₫", name: "Dong", nameEn: "Dong" },
-  SAR: { flag: "🇸🇦", symbol: "﷼", name: "Riyal", nameEn: "Riyal" },
+  USD: { flag: "🇺🇸", symbol: "$" },
+  IDR: { flag: "🇮🇩", symbol: "Rp" },
+  EUR: { flag: "🇪🇺", symbol: "€" },
+  GBP: { flag: "🇬🇧", symbol: "£" },
+  JPY: { flag: "🇯🇵", symbol: "¥" },
+  SGD: { flag: "🇸🇬", symbol: "S$" },
+  MYR: { flag: "🇲🇾", symbol: "RM" },
+  THB: { flag: "🇹🇭", symbol: "฿" },
+  AUD: { flag: "🇦🇺", symbol: "A$" },
+  CNY: { flag: "🇨🇳", symbol: "¥" },
+  KRW: { flag: "🇰🇷", symbol: "₩" },
+  INR: { flag: "🇮🇳", symbol: "₹" },
+  PHP: { flag: "🇵🇭", symbol: "₱" },
+  VND: { flag: "🇻🇳", symbol: "₫" },
+  SAR: { flag: "🇸🇦", symbol: "﷼" },
 };
 
 function convert(amount: number, from: string, to: string): number {
@@ -162,6 +162,7 @@ export function CurrencyConverterWidget({
                 currencies={currencies}
                 selected={fromCurrency}
                 lang={language}
+                t={t.currencyNames}
                 onSelect={(c) => {
                   setFromCurrency(c);
                   setShowFromPicker(false);
@@ -215,6 +216,7 @@ export function CurrencyConverterWidget({
                 currencies={currencies}
                 selected={toCurrency}
                 lang={language}
+                t={t.currencyNames}
                 onSelect={(c) => {
                   setToCurrency(c);
                   setShowToPicker(false);
@@ -238,11 +240,13 @@ function MiniPicker({
   currencies,
   selected,
   lang,
+  t,
   onSelect,
 }: {
   currencies: string[];
   selected: string;
   lang: string;
+  t: Record<string, string>;
   onSelect: (c: string) => void;
 }) {
   const [search, setSearch] = useState("");
@@ -251,10 +255,11 @@ function MiniPicker({
     if (!search) return true;
     const q = search.toLowerCase();
     const info = CURRENCY_INFO[c];
+    const name = t[c] || c;
     return (
       c.toLowerCase().includes(q) ||
-      info?.name.toLowerCase().includes(q) ||
-      info?.nameEn.toLowerCase().includes(q)
+      name.toLowerCase().includes(q) ||
+      info?.symbol.toLowerCase().includes(q)
     );
   });
 
@@ -270,6 +275,7 @@ function MiniPicker({
       />
       {filtered.map((c) => {
         const info = CURRENCY_INFO[c];
+        const name = t[c] || c;
         return (
           <button
             key={c}

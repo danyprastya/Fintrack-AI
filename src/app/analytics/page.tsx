@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLanguage } from "@/contexts/language-context";
 import { useAuth } from "@/contexts/auth-context";
+import { useCurrency } from "@/contexts/currency-context";
 import { PageHeader } from "@/components/shared/page-header";
 import { SummaryCards } from "@/components/analytics/summary-cards";
 import { BarChartComparison } from "@/components/analytics/bar-chart-comparison";
@@ -32,6 +33,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function AnalyticsPage() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
+  const { displayCurrency, convertForDisplay } = useCurrency();
   const [period, setPeriod] = useState<Period>("monthly");
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [isLoading, setIsLoading] = useState(true);
@@ -214,7 +216,11 @@ export default function AnalyticsPage() {
         </p>
 
         {/* Summary Cards */}
-        <SummaryCards totalIncome={totalIncome} totalExpense={totalExpense} />
+        <SummaryCards
+          totalIncome={convertForDisplay(totalIncome)}
+          totalExpense={convertForDisplay(totalExpense)}
+          currency={displayCurrency}
+        />
 
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
@@ -263,8 +269,9 @@ export default function AnalyticsPage() {
                     {t.analytics.incomeVsExpense}
                   </h2>
                   <BarChartComparison
-                    totalIncome={totalIncome}
-                    totalExpense={totalExpense}
+                    totalIncome={convertForDisplay(totalIncome)}
+                    totalExpense={convertForDisplay(totalExpense)}
+                    currency={displayCurrency}
                   />
                 </>
               ) : (
@@ -275,8 +282,9 @@ export default function AnalyticsPage() {
                       : t.analytics.spendingByCategory}
                   </h2>
                   <SpendingRings
-                    categories={categoryData}
-                    totalSpending={totalCategoryAmount}
+                    categories={categoryData.map(c => ({ ...c, amount: convertForDisplay(c.amount) }))}
+                    totalSpending={convertForDisplay(totalCategoryAmount)}
+                    currency={displayCurrency}
                   />
                 </>
               )}

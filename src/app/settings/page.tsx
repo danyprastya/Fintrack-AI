@@ -5,6 +5,7 @@ import { useLanguage } from "@/contexts/language-context";
 import { useAuth } from "@/contexts/auth-context";
 import { useTheme } from "@/contexts/theme-context";
 import { useNotifications } from "@/contexts/notification-context";
+import { useCurrency } from "@/contexts/currency-context";
 import { useDynamicIslandToast } from "@/components/ui/dynamic-island-toast";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
@@ -57,7 +58,6 @@ import {
   type CustomCategoryDoc,
 } from "@/lib/firestore-service";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { convertCurrency } from "@/lib/utils/exchange-rates";
 import { getFirebaseAuth } from "@/lib/firebase";
 import {
   EmailAuthProvider,
@@ -138,6 +138,7 @@ export default function SettingsPage() {
   const { resolvedTheme, toggleTheme } = useTheme();
   const { unreadCount } = useNotifications();
   const { showToast } = useDynamicIslandToast();
+  const { displayCurrency, setDisplayCurrency, convertForDisplay } = useCurrency();
   const router = useRouter();
   const [wallets, setWallets] = useState<WalletDoc[]>([]);
 
@@ -159,13 +160,8 @@ export default function SettingsPage() {
     "all" | "income" | "expense"
   >("all");
 
-  // Currency state
-  const [selectedCurrency, setSelectedCurrency] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("fintrack-currency") || "IDR";
-    }
-    return "IDR";
-  });
+  // Currency state — synced from context
+  const selectedCurrency = displayCurrency;
 
   // Security state
   const [currentPw, setCurrentPw] = useState("");
@@ -323,29 +319,32 @@ export default function SettingsPage() {
 
   const handleCurrencyChange = useCallback(
     async (code: string) => {
-      const oldCurrency = selectedCurrency;
-      setSelectedCurrency(code);
-      localStorage.setItem("fintrack-currency", code);
+      // Display-only conversion: we do NOT modify wallet balances in Firestore.
+      // All data stays in baseCurrency; conversion is applied on render.
+      setDisplayCurrency(code);
 
-      if (oldCurrency !== code && wallets.length > 0 && user?.uid) {
+      // Persist to Firestore user doc as well
+      if (user?.uid) {
         try {
-          for (const w of wallets) {
-            const newBalance = Math.round(
-              convertCurrency(w.balance || 0, oldCurrency, code),
+          const { doc, setDoc } = await import("firebase/firestore");
+          const { getFirebaseDb } = await import("@/lib/firebase");
+          const db = getFirebaseDb();
+          if (db) {
+            await setDoc(
+              doc(db, "users", user.uid),
+              { currency: code },
+              { merge: true },
             );
-            await updateWallet(w.id, { balance: newBalance });
           }
-          const updated = await getWallets(user.uid);
-          setWallets(updated);
         } catch (err) {
-          console.error("Currency conversion error:", err);
+          console.error("Failed to save currency to Firestore:", err);
         }
       }
 
       showToast("success", t.toast.currencyChanged);
       setShowCurrency(false);
     },
-    [selectedCurrency, wallets, user?.uid, showToast, t],
+    [setDisplayCurrency, user?.uid, showToast, t],
   );
 
   const handleChangePassword = async () => {
@@ -429,12 +428,12 @@ export default function SettingsPage() {
     (p) => p.providerId === "password",
   );
 
-  // Map WalletDoc to WalletData for the component
+  // Map WalletDoc to WalletData for the component — convert for display
   const walletData = wallets.map((w) => ({
     id: w.id,
     name: w.name,
     type: (w.type as "cash" | "bank" | "ewallet") || "cash",
-    balance: w.balance || 0,
+    balance: convertForDisplay(w.balance || 0),
     icon: w.icon || "cash",
     color: w.color,
   }));

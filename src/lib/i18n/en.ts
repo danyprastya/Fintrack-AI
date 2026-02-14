@@ -373,4 +373,22 @@ export const en: Translations = {
     nov: 'November',
     dec: 'December',
   },
+
+  currencyNames: {
+    USD: 'US Dollar',
+    IDR: 'Indonesian Rupiah',
+    EUR: 'Euro',
+    GBP: 'British Pound',
+    JPY: 'Japanese Yen',
+    SGD: 'Singapore Dollar',
+    MYR: 'Malaysian Ringgit',
+    THB: 'Thai Baht',
+    AUD: 'Australian Dollar',
+    CNY: 'Chinese Yuan',
+    KRW: 'South Korean Won',
+    INR: 'Indian Rupee',
+    PHP: 'Philippine Peso',
+    VND: 'Vietnamese Dong',
+    SAR: 'Saudi Riyal',
+  },
 };

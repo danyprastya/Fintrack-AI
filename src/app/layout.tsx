@@ -5,6 +5,7 @@ import { LanguageProvider } from "@/contexts/language-context";
 import { ThemeProvider } from "@/contexts/theme-context";
 import { NotificationProvider } from "@/contexts/notification-context";
 import { AuthProvider } from "@/contexts/auth-context";
+import { CurrencyProvider } from "@/contexts/currency-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { AppShell } from "@/components/layout/app-shell";
@@ -71,6 +72,7 @@ export default function RootLayout({
         <LanguageProvider>
           <ThemeProvider>
             <AuthProvider>
+              <CurrencyProvider>
               <AuthGuard>
                 <NotificationProvider>
                   <DynamicIslandToastProvider>
@@ -82,6 +84,7 @@ export default function RootLayout({
                   </DynamicIslandToastProvider>
                 </NotificationProvider>
               </AuthGuard>
+              </CurrencyProvider>
             </AuthProvider>
           </ThemeProvider>
         </LanguageProvider>

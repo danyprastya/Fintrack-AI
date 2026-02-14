@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLanguage } from "@/contexts/language-context";
 import { useAuth } from "@/contexts/auth-context";
+import { useCurrency } from "@/contexts/currency-context";
 import { useDynamicIslandToast } from "@/components/ui/dynamic-island-toast";
 import { PageHeader } from "@/components/shared/page-header";
 import { TransactionList } from "@/components/transactions/transaction-list";
@@ -52,6 +53,7 @@ const CATEGORIES = [
 export default function TransactionsPage() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
+  const { displayCurrency, convertForDisplay } = useCurrency();
   const { showToast } = useDynamicIslandToast();
   const { hide: hideNav, show: showNav } = useNavbar();
   const [filter, setFilter] = useState<FilterType>("all");
@@ -224,7 +226,8 @@ export default function TransactionsPage() {
 
         {/* Transaction List */}
         <TransactionList
-          transactions={filteredTransactions}
+          transactions={filteredTransactions.map(tx => ({ ...tx, amount: convertForDisplay(tx.amount) }))}
+          currency={displayCurrency}
           isLoading={isLoading}
           onDelete={handleDelete}
           onEdit={() => {}}
