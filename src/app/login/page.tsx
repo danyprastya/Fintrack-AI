@@ -22,10 +22,13 @@ import {
   Circle,
   ArrowLeft,
   ShieldCheck,
+  MessageCircle,
 } from "lucide-react";
 import Image from "next/image";
 
 type Step = "form" | "otp";
+type LoginMode = "email" | "phone";
+type PhoneLoginStep = "phone-input" | "email-input" | "otp";
 
 export default function LoginPage() {
   const { signIn, signInWithGoogle, signInWithToken } = useAuth();
@@ -36,12 +39,20 @@ export default function LoginPage() {
   const [isRegister, setIsRegister] = useState(false);
   const [step, setStep] = useState<Step>("form");
 
+  // Login mode: email (default) or phone (WhatsApp OTP login)
+  const [loginMode, setLoginMode] = useState<LoginMode>("email");
+  const [phoneLoginStep, setPhoneLoginStep] = useState<PhoneLoginStep>("phone-input");
+
   // Form fields
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Phone login fields
+  const [phoneLoginPhone, setPhoneLoginPhone] = useState("");
+  const [phoneLoginEmail, setPhoneLoginEmail] = useState("");
 
   // OTP
   const [otpDigits, setOtpDigits] = useState<string[]>([
@@ -55,6 +66,7 @@ export default function LoginPage() {
   const [resendTimer, setResendTimer] = useState(0);
   const [devOtp, setDevOtp] = useState("");
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [otpType, setOtpType] = useState<"register" | "login" | "link">("register");
 
   // State
   const [isLoading, setIsLoading] = useState(false);
@@ -148,6 +160,116 @@ export default function LoginPage() {
           ? "Gagal menghubungi server."
           : "Failed to connect to server.",
       );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- Phone Login Step 1: Send OTP for login ---
+  const handlePhoneLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+    try {
+      const bodyData: { phone: string; email?: string } = { phone: phoneLoginPhone };
+      if (phoneLoginStep === "email-input" && phoneLoginEmail) {
+        bodyData.email = phoneLoginEmail;
+      }
+
+      const res = await fetch("/api/auth/login-phone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.code === "PHONE_NOT_FOUND") {
+          // Phone not found → show email field
+          setPhoneLoginStep("email-input");
+          setError("");
+          return;
+        }
+        setError(data.error || (language === "id" ? "Gagal mengirim OTP." : "Failed to send OTP."));
+        return;
+      }
+
+      if (data.devOtp) setDevOtp(data.devOtp);
+      setOtpType(data.type === "link" ? "link" : "login");
+      setResendTimer(60);
+      setPhoneLoginStep("otp");
+    } catch {
+      setError(
+        language === "id"
+          ? "Gagal menghubungi server."
+          : "Failed to connect to server.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- Phone Login Step 2: Verify OTP for login ---
+  const handleVerifyLoginOtp = async () => {
+    const code = otpDigits.join("");
+    if (code.length !== 6) return;
+
+    setError("");
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-login-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneLoginPhone, code }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || t.login.verifyFailed);
+        return;
+      }
+
+      await signInWithToken(data.customToken);
+      if (data.linked) {
+        showToast("success", t.login.phoneLinkSuccess);
+      } else {
+        showToast("success", t.toast.loginSuccess);
+      }
+      router.push("/");
+    } catch {
+      setError(t.login.verifyFailed);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- Resend OTP for phone login ---
+  const handleResendLoginOtp = async () => {
+    if (resendTimer > 0) return;
+    setIsLoading(true);
+    setError("");
+    try {
+      const bodyData: { phone: string; email?: string } = { phone: phoneLoginPhone };
+      if (otpType === "link" && phoneLoginEmail) {
+        bodyData.email = phoneLoginEmail;
+      }
+
+      const res = await fetch("/api/auth/login-phone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyData),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error);
+        return;
+      }
+      if (data.devOtp) setDevOtp(data.devOtp);
+      setResendTimer(60);
+      setOtpDigits(["", "", "", "", "", ""]);
+    } catch {
+      setError(t.login.resendFailed);
     } finally {
       setIsLoading(false);
     }
@@ -280,7 +402,247 @@ export default function LoginPage() {
     }
   };
 
-  // ===== OTP VERIFICATION SCREEN =====
+  // ===== PHONE LOGIN OTP VERIFICATION SCREEN =====
+  if (loginMode === "phone" && phoneLoginStep === "otp") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
+        <div className="w-full max-w-sm">
+          {/* Back */}
+          <button
+            onClick={() => {
+              setPhoneLoginStep("phone-input");
+              setOtpDigits(["", "", "", "", "", ""]);
+              setError("");
+            }}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t.login.back}
+          </button>
+
+          {/* Icon */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+              <ShieldCheck className="h-8 w-8 text-primary" />
+            </div>
+            <h1 className="text-xl font-bold text-foreground">
+              {t.login.verifyTitle}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1 text-center">
+              {t.login.verifySub}
+            </p>
+            <p className="text-sm font-medium text-primary mt-2">
+              +62 {phoneLoginPhone.replace(/^0/, "")}
+            </p>
+            {otpType === "link" && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 text-center">
+                {t.login.linkNotice}
+              </p>
+            )}
+          </div>
+
+          {/* OTP Inputs */}
+          <div
+            className="flex justify-center gap-2.5 mb-6"
+            onPaste={handleOtpPaste}
+          >
+            {otpDigits.map((digit, i) => (
+              <input
+                key={i}
+                ref={(el) => {
+                  otpRefs.current[i] = el;
+                }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleOtpChange(i, e.target.value)}
+                onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                className={cn(
+                  "w-12 h-14 text-center text-xl font-bold rounded-xl border-2 bg-background transition-all outline-none",
+                  digit
+                    ? "border-primary text-foreground"
+                    : "border-border text-muted-foreground focus:border-primary",
+                )}
+              />
+            ))}
+          </div>
+
+          {/* Dev OTP indicator */}
+          {devOtp && (
+            <div className="text-center mb-4 p-2 bg-amber-500/10 rounded-lg">
+              <p className="text-xs text-amber-600 dark:text-amber-400 font-mono">
+                {t.login.devOtpLabel}: {devOtp}
+              </p>
+            </div>
+          )}
+
+          {error && (
+            <p className="text-sm text-destructive text-center mb-4">{error}</p>
+          )}
+
+          {/* Verify Button */}
+          <button
+            onClick={handleVerifyLoginOtp}
+            disabled={isLoading || otpDigits.join("").length !== 6}
+            className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              t.login.verify
+            )}
+          </button>
+
+          {/* Resend */}
+          <div className="text-center mt-4">
+            {resendTimer > 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {t.login.resendIn}{" "}
+                <span className="font-medium text-foreground">
+                  {resendTimer}s
+                </span>
+              </p>
+            ) : (
+              <button
+                onClick={handleResendLoginOtp}
+                disabled={isLoading}
+                className="text-sm text-primary font-medium hover:underline disabled:opacity-50"
+              >
+                {t.login.resend}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== PHONE LOGIN FORM SCREENS =====
+  if (loginMode === "phone" && (phoneLoginStep === "phone-input" || phoneLoginStep === "email-input")) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
+        <div className="w-full max-w-sm">
+          {/* Back */}
+          <button
+            onClick={() => {
+              if (phoneLoginStep === "email-input") {
+                setPhoneLoginStep("phone-input");
+                setPhoneLoginEmail("");
+                setError("");
+              } else {
+                setLoginMode("email");
+                setPhoneLoginPhone("");
+                setError("");
+              }
+            }}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t.login.back}
+          </button>
+
+          {/* Icon */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4">
+              <MessageCircle className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <h1 className="text-xl font-bold text-foreground">
+              {t.login.phoneLoginTitle}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1 text-center">
+              {phoneLoginStep === "email-input"
+                ? t.login.phoneLoginEmailSub
+                : t.login.phoneLoginSub}
+            </p>
+          </div>
+
+          <form onSubmit={handlePhoneLogin} className="space-y-4">
+            {/* Phone */}
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="tel"
+                placeholder={t.login.phonePlaceholder}
+                value={phoneLoginPhone}
+                onChange={(e) => setPhoneLoginPhone(e.target.value.replace(/[^\d+]/g, ""))}
+                className="pl-10 h-12 rounded-xl"
+                required
+                autoComplete="tel"
+                maxLength={15}
+                disabled={phoneLoginStep === "email-input"}
+              />
+            </div>
+
+            {/* Email (shown when phone not found) */}
+            {phoneLoginStep === "email-input" && (
+              <>
+                <div className="bg-amber-500/10 rounded-xl p-3">
+                  <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
+                    {t.login.phoneNotFoundHint}
+                  </p>
+                </div>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    placeholder={t.login.email}
+                    value={phoneLoginEmail}
+                    onChange={(e) => setPhoneLoginEmail(e.target.value)}
+                    className="pl-10 h-12 rounded-xl"
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+              </>
+            )}
+
+            {error && (
+              <p className="text-sm text-destructive text-center">{error}</p>
+            )}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isLoading || !phoneLoginPhone || (phoneLoginStep === "email-input" && !phoneLoginEmail)}
+              className="w-full h-12 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <MessageCircle className="h-4 w-4" />
+                  {t.login.sendOtp}
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Back to email login */}
+          <p className="text-sm text-muted-foreground mt-6 text-center">
+            <button
+              onClick={() => {
+                setLoginMode("email");
+                setPhoneLoginPhone("");
+                setPhoneLoginEmail("");
+                setError("");
+              }}
+              className="text-primary font-medium hover:underline"
+            >
+              {t.login.backToEmailLogin}
+            </button>
+          </p>
+
+          <div className="flex items-center gap-1.5 mt-4 justify-center text-muted-foreground/60">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span className="text-[11px]">{t.login.secureInfo}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== REGISTER OTP VERIFICATION SCREEN =====
   if (step === "otp") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
@@ -585,6 +947,22 @@ export default function LoginPage() {
         </svg>
         {t.login.google}
       </button>
+
+      {/* WhatsApp Login (only on login tab) */}
+      {!isRegister && (
+        <button
+          onClick={() => {
+            setLoginMode("phone");
+            setPhoneLoginStep("phone-input");
+            setError("");
+          }}
+          disabled={isLoading}
+          className="w-full max-w-sm h-12 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors font-medium text-sm flex items-center justify-center gap-3 disabled:opacity-50 text-emerald-700 dark:text-emerald-400 mt-3"
+        >
+          <MessageCircle className="h-5 w-5" />
+          {t.login.whatsappLogin}
+        </button>
+      )}
 
       {/* Toggle + Security badge */}
       <p className="text-sm text-muted-foreground mt-6">

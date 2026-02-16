@@ -191,6 +191,14 @@ export const id: Translations = {
     devOtpLabel: 'Dev OTP',
     verifyFailed: 'Gagal memverifikasi.',
     resendFailed: 'Gagal mengirim ulang.',
+    whatsappLogin: 'Masuk dengan WhatsApp',
+    phoneLoginTitle: 'Masuk dengan WhatsApp',
+    phoneLoginSub: 'Masukkan nomor WhatsApp yang terdaftar di akun Anda',
+    phoneLoginEmailSub: 'Nomor belum terhubung. Masukkan email akun Anda untuk menghubungkan.',
+    phoneNotFoundHint: 'Nomor HP belum terdaftar. Masukkan email akun Anda untuk menghubungkan nomor ini.',
+    backToEmailLogin: 'Kembali ke login email',
+    phoneLinkSuccess: 'Nomor HP berhasil terhubung ke akun Anda!',
+    linkNotice: 'Nomor ini akan dihubungkan ke akun Anda setelah verifikasi.',
   },
 
   profile: {

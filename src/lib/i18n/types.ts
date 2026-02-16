@@ -198,6 +198,14 @@ export interface Translations {
     devOtpLabel: string;
     verifyFailed: string;
     resendFailed: string;
+    whatsappLogin: string;
+    phoneLoginTitle: string;
+    phoneLoginSub: string;
+    phoneLoginEmailSub: string;
+    phoneNotFoundHint: string;
+    backToEmailLogin: string;
+    phoneLinkSuccess: string;
+    linkNotice: string;
   };
 
   // Profile

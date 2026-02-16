@@ -5,11 +5,13 @@ import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { FieldValue } from "firebase-admin/firestore";
 
 /**
- * POST /api/auth/verify-otp
+ * POST /api/auth/verify-login-otp
  *
- * Step 2 of registration: Verify OTP, create account, return custom token.
+ * Verify OTP for phone login. Handles two types:
+ * - 'login': Phone already linked → find user → custom token
+ * - 'link':  Phone not linked → link phone to account → custom token
  *
- * Body: { phone, code, password }
+ * Body: { phone, code }
  * Returns: { success, customToken } or { error }
  */
 export async function POST(req: NextRequest) {
@@ -22,9 +24,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { phone, code, password } = body;
+    const { phone, code } = body;
 
-    if (!phone || !code || !password) {
+    if (!phone || !code) {
       return NextResponse.json(
         { error: "Data tidak lengkap.", code: "MISSING_FIELDS" },
         { status: 400 }
@@ -39,7 +41,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Rate limit by phone
+    // Rate limit
     const rateCheck = checkRateLimit(`otp-verify:${sanitizedPhone}`, RATE_LIMITS.otpVerify);
     if (!rateCheck.allowed) {
       return NextResponse.json(
@@ -57,18 +59,26 @@ export async function POST(req: NextRequest) {
 
     if (!otpDoc.exists) {
       return NextResponse.json(
-        { error: "Kode OTP tidak ditemukan. Silakan daftar ulang.", code: "OTP_NOT_FOUND" },
+        { error: "Kode OTP tidak ditemukan. Silakan coba lagi.", code: "OTP_NOT_FOUND" },
         { status: 404 }
       );
     }
 
     const otpData = otpDoc.data()!;
 
+    // Must be a login or link type OTP
+    if (otpData.type !== "login" && otpData.type !== "link") {
+      return NextResponse.json(
+        { error: "Kode OTP tidak valid untuk login.", code: "INVALID_OTP_TYPE" },
+        { status: 400 }
+      );
+    }
+
     // Check expiration
     if (Date.now() > otpData.expiresAt) {
       await otpRef.delete();
       return NextResponse.json(
-        { error: "Kode OTP sudah kedaluwarsa. Silakan daftar ulang.", code: "OTP_EXPIRED" },
+        { error: "Kode OTP sudah kedaluwarsa. Silakan kirim ulang.", code: "OTP_EXPIRED" },
         { status: 410 }
       );
     }
@@ -77,7 +87,7 @@ export async function POST(req: NextRequest) {
     if (otpData.attempts >= 5) {
       await otpRef.delete();
       return NextResponse.json(
-        { error: "Terlalu banyak percobaan. Silakan daftar ulang.", code: "MAX_ATTEMPTS" },
+        { error: "Terlalu banyak percobaan. Silakan kirim ulang OTP.", code: "MAX_ATTEMPTS" },
         { status: 429 }
       );
     }
@@ -96,61 +106,62 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // --- OTP Valid — Create Firebase Auth account ---
-    let userRecord;
-    try {
-      userRecord = await auth.createUser({
-        email: otpData.email,
-        emailVerified: true,
-        password: password,
-        displayName: otpData.name,
-        phoneNumber: `+${sanitizedPhone.startsWith("0") ? "62" + sanitizedPhone.slice(1) : sanitizedPhone}`,
-      });
-    } catch (authError: unknown) {
-      const errorMessage = authError instanceof Error ? authError.message : "Unknown error";
-      if (errorMessage.includes("email-already-exists")) {
-        await otpRef.delete();
-        return NextResponse.json(
-          { error: "Email sudah terdaftar. Gunakan email lain atau masuk.", code: "EMAIL_EXISTS" },
-          { status: 409 }
-        );
-      }
-      if (errorMessage.includes("phone-number-already-exists")) {
-        await otpRef.delete();
-        return NextResponse.json(
-          { error: "Nomor HP sudah digunakan akun lain. Gunakan nomor lain atau masuk.", code: "PHONE_EXISTS" },
-          { status: 409 }
-        );
-      }
-      throw authError;
+    // --- OTP Valid ---
+    const uid = otpData.uid;
+
+    if (!uid) {
+      await otpRef.delete();
+      return NextResponse.json(
+        { error: "Data akun tidak valid. Silakan coba lagi.", code: "INVALID_DATA" },
+        { status: 400 }
+      );
     }
 
-    // --- Create user document in Firestore ---
-    await db.collection("users").doc(userRecord.uid).set({
-      uid: userRecord.uid,
-      displayName: otpData.name,
-      email: otpData.email,
-      phoneNumber: sanitizedPhone,
-      phoneVerified: true,
-      photoURL: null,
-      currency: "IDR",
-      language: "id",
-      createdAt: FieldValue.serverTimestamp(),
-    });
+    // Verify user still exists
+    try {
+      await auth.getUser(uid);
+    } catch {
+      await otpRef.delete();
+      return NextResponse.json(
+        { error: "Akun tidak ditemukan.", code: "USER_NOT_FOUND" },
+        { status: 404 }
+      );
+    }
+
+    // If type is 'link', update the user's phone number
+    if (otpData.type === "link") {
+      // Update Firestore user document
+      await db.collection("users").doc(uid).update({
+        phoneNumber: sanitizedPhone,
+        phoneVerified: true,
+      });
+
+      // Also update Firebase Auth phone number
+      const internationalPhone = `+${sanitizedPhone.startsWith("0") ? "62" + sanitizedPhone.slice(1) : sanitizedPhone}`;
+      try {
+        await auth.updateUser(uid, { phoneNumber: internationalPhone });
+      } catch (authErr) {
+        // If phone already exists in Auth for another user, log but don't block login
+        console.warn("Failed to update Auth phone number:", authErr);
+      }
+    }
 
     // --- Clean up OTP ---
     await otpRef.delete();
 
-    // --- Generate custom token for client sign-in ---
-    const customToken = await auth.createCustomToken(userRecord.uid);
+    // --- Generate custom token ---
+    const customToken = await auth.createCustomToken(uid);
 
     return NextResponse.json({
       success: true,
       customToken,
-      message: "Akun berhasil dibuat!",
+      linked: otpData.type === "link",
+      message: otpData.type === "link"
+        ? "Nomor HP berhasil terhubung! Anda sekarang login."
+        : "Login berhasil!",
     });
   } catch (error) {
-    console.error("Verify OTP error:", error);
+    console.error("Verify login OTP error:", error);
     return NextResponse.json(
       { error: "Terjadi kesalahan server.", code: "SERVER_ERROR" },
       { status: 500 }

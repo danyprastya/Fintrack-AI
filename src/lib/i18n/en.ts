@@ -191,6 +191,14 @@ export const en: Translations = {
     devOtpLabel: 'Dev OTP',
     verifyFailed: 'Verification failed.',
     resendFailed: 'Failed to resend.',
+    whatsappLogin: 'Sign in with WhatsApp',
+    phoneLoginTitle: 'Sign in with WhatsApp',
+    phoneLoginSub: 'Enter the WhatsApp number registered to your account',
+    phoneLoginEmailSub: 'Number not linked. Enter your account email to connect it.',
+    phoneNotFoundHint: 'Phone number not registered. Enter your account email to link this number.',
+    backToEmailLogin: 'Back to email login',
+    phoneLinkSuccess: 'Phone number successfully linked to your account!',
+    linkNotice: 'This number will be linked to your account after verification.',
   },
 
   profile: {
