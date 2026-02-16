@@ -70,9 +70,10 @@ export function formatCurrencyParts(
   let value = '';
 
   for (const part of parts) {
-    if (part.type === 'currency' || part.type === 'literal' && symbol.length > 0 && value.length === 0) {
+    const type = part.type as string;
+    if (type === 'currency' || type === 'literal' && symbol.length > 0 && value.length === 0) {
       symbol += part.value;
-    } else if (part.type !== 'currency') {
+    } else if (type !== 'currency') {
       value += part.value;
     }
   }
